@@ -25,8 +25,6 @@ for t = 0: step: (rocket.t_stage(1) - step)
     index = index + num_rows; % 更新索引变量
     
     rocket = rocket.update(t+1, X_count(index-1, :));
-    disp(rocket.R_L());
-    disp(rocket.P_L());
 end
 % 二级
 
