@@ -4,8 +4,8 @@ A_L0 = 40 * pi / 180;
 theta_L0 = 116 * pi / 180;
 Phi_L0 = 40 * pi / 180;
 
-rocket = Rocket(A_L0, theta_L0, Phi_L0);% 创建火箭对象
 pitch_data = load('FiC.txt');           % 读取俯仰角飞行程序数据
+rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);% 创建火箭对象
 
 %% 微分方程参数设置
 step = 1;               % 定义外部循环步长,默认是 1 秒
@@ -16,39 +16,41 @@ index = 1;              % 索引变量
 
 %% 主动段弹道计算
 % 一级
-for t = 0: step: (rocket.t(1) - step)
-    [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket, pitch_data);
+for t = 0: step: (rocket.t_stage(1) - step)
+    [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket);
     
     num_rows = size(X_t, 1); % 计算 X_t 的行数
     X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
     t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
     index = index + num_rows; % 更新索引变量
     
-    rocket = rocket.update(X_count(index-1, :));
+    rocket = rocket.update(t+1, X_count(index-1, :));
+    disp(rocket.R_L());
+    disp(rocket.P_L());
 end
 % 二级
-rocket.X(7) = Rocket.m(2);
-for t = rocket.t(1): step: (rocket.t(2)+rocket.t(1) - step)
-    [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket, pitch_data);
+
+for t = rocket.t_stage(1): step: (rocket.t_stage(2)+rocket.t_stage(1) - step)
+    [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket);
     
     num_rows = size(X_t, 1); % 计算 X_t 的行数
     X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
     t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
     index = index + num_rows; % 更新索引变量
     
-    rocket = rocket.update(X_count(index-1, :));
+    rocket = rocket.update(t+1, X_count(index-1, :));
 end
 % 三级
-rocket.X(7) = Rocket.m(3);
-for t = (rocket.t(2)+rocket.t(1)): step: (rocket.t(2)+rocket.t(1)+rocket.t(3) - step)
-    [t_t, X_t] = ode45(@dynamic, [t; t + step], rocket.X, [], rocket, pitch_data);
+
+for t = (rocket.t_stage(2)+rocket.t_stage(1)): step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
+    [t_t, X_t] = ode45(@dynamic, [t; t + step], rocket.X, [], rocket);
     
     num_rows = size(X_t, 1); % 计算 X_t 的行数
     X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
     t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
     index = index + num_rows; % 更新索引变量
     
-    rocket = rocket.update(X_count(index-1, :));
+    rocket = rocket.update(t+1, X_count(index-1, :));
 end
 
 % 截取主动段数据
@@ -66,15 +68,15 @@ zlabel('y/m');
 title('发射坐标系下主动段弹道曲线');
 
 %% 被动段弹道计算
-for t = (rocket.t(1) + rocket.t(2) + rocket.t(3)) : step : 10000
-    [t_t, X_t] = ode45(@dynamic, [t, t + step], rocket.X, [], rocket, pitch_data);
+for t = (rocket.t_stage(1) + rocket.t_stage(2) + rocket.t_stage(3)) : step : 10000
+    [t_t, X_t] = ode45(@dynamic, [t, t + step], rocket.X, [], rocket);
     
     num_rows = size(X_t, 1); % 计算 X_t 的行数
     X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
     t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
     index = index + num_rows; % 更新索引变量
     
-    rocket = rocket.update(X_count(index-1, :));
+    rocket = rocket.update(t+1, X_count(index-1, :));
     
     % if rocket.r < 6400000 % 粗略的落地判定
     
