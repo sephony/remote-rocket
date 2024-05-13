@@ -1,15 +1,15 @@
 clc; clear;
 %% 火箭发射点参数
-A_L0 = 40 * pi / 180;
-theta_L0 = 116 * pi / 180;
-Phi_L0 = 40 * pi / 180;
+A_L0 = -20 * pi / 180;
+theta_L0 = 60 * pi / 180;
+Phi_L0 = -30 * pi / 180;
 
 pitch_data = load('FiC.txt');           % 读取俯仰角飞行程序数据
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);% 创建火箭对象
 
 %% 微分方程参数设置
 step = 1;               % 定义外部循环步长,默认是 1 秒
-N = 150000 * step;      % 预分配内存
+N = 500000 / step;      % 预分配内存
 X_count = zeros(N,7);   % N 行 7 列的矩阵, 7 列分别是 x, y, z, Vx, Vy, Vz, m
 t_count = zeros(N,1);   % N 行 1 列的矩阵, 存储时间
 index = 1;              % 索引变量

@@ -1,12 +1,11 @@
 classdef Rocket
     properties(Constant)%% 常量
         %% 火箭参数
-        m_stage = [19000 5400 1300];        % 各级火箭质量
-        d_stage = [1.0 1.0 1.0];            % 各级火箭直径
-        P_stage = [480000 120000 40000];    % 各级火箭推力
-        I_stage = [240 245 255];            % 各级火箭比冲
-        dm = [170 45 15];                   % 各级发动机秒耗量
-        t_stage = [70 75 60];               % 各级工作时间
+        m_stage = [18800 5400 1300];        % 各级火箭质量
+        d_stage = [2.0 2.0 1.0];            % 各级火箭直径
+        P_stage = [485000 120000 35000];    % 各级火箭推力
+        Isp_stage = [240 245 255];          % 各级火箭比冲
+        t_stage = [72 71 64];               % 各级工作时间
         
     end
     properties%% 状态变量
@@ -16,6 +15,7 @@ classdef Rocket
         R_launch;           % 火箭位置（发射坐标系下）
         V_launch;           % 火箭速度（发射坐标系下）
         m;                  % 火箭质量
+        dm;                 % 各级发动机秒耗量
         
         pitch;              % 火箭俯仰角
         yaw;                % 火箭偏航角
@@ -76,6 +76,7 @@ classdef Rocket
             obj.A_L = A_L0;
             obj.data = pitch_data;
             obj = obj.update(0, obj.X);
+            obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
         end
         
         %% 更新状态(根据变化后的X更新状态量)
@@ -84,13 +85,13 @@ classdef Rocket
             obj.X = X(:); % 将 X 转换为列向量
             obj.R_launch = obj.X(1:3);
             obj.V_launch = obj.X(4:6);
-            obj.m = obj.X(7);
-            % 如果到达级间分离时间，更新火箭质量，覆盖计算的X(7)
+            % 如果到达级间分离时间，更新火箭质量
             if(obj.t == Rocket.t_stage(1))
-                obj.m = Rocket.m_stage(2);
+                obj.X(7) = Rocket.m_stage(2);
             elseif obj.t == Rocket.t_stage(1) + Rocket.t_stage(2)
-                obj.m = Rocket.m_stage(3);
+                obj.X(7) = Rocket.m_stage(3);
             end
+            obj.m = obj.X(7);
             
             obj.Rc_e = obj.get_Rc_e();
             obj.Rc_L = obj.get_Rc_L();
@@ -148,20 +149,20 @@ classdef Rocket
             
             % 计算气动参数
             if(0 <= obj.h && obj.h <= 40000)
-                Cx = 0.09;
-                Cy = 0.13;
+                C_x = 0.09;
+                C_y = 0.13;
             elseif(40000 < obj.h && obj.h <= 60000)
-                Cx = 0.04;
-                Cy = 0.08;
+                C_x = 0.04;
+                C_y = 0.08;
             else
-                Cx = 0;
-                Cy = 0;
+                C_x = 0;
+                C_y = 0;
             end
-            Cz = 0;
+            C_z = 0;
             
-            D = Cx * obj.q * S;
-            L = Cy * obj.q * S;
-            Z = Cz * obj.q * S;
+            D = C_x * obj.q * S;
+            L = C_y * obj.q * S;
+            Z = C_z * obj.q * S;
             
             R_v = [-D; L; Z];
         end
@@ -169,7 +170,6 @@ classdef Rocket
         function R_L = R_L(obj)
             % todo气动力在速度坐标系下的分量
             R = obj.R_v();
-            
             % 气动力在发射坐标系下的分量
             R_L = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v)' * R;
         end
