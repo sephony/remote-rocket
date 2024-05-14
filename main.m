@@ -1,4 +1,4 @@
-clc; clear;
+clc; clear; clf;
 %% 火箭发射点参数
 A_L0 = -20 * pi / 180;
 theta_L0 = 60 * pi / 180;
@@ -6,6 +6,8 @@ Phi_L0 = -30 * pi / 180;
 
 pitch_data = load('FiC.txt');           % 读取俯仰角飞行程序数据
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);% 创建火箭对象
+disp('发射点参数:')
+fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', Earth.rad2deg(A_L0), Earth.rad2deg(theta_L0), Earth.rad2deg(Phi_L0));
 
 %% 微分方程参数设置
 step = 1;               % 定义外部循环步长,默认是 1 秒
@@ -26,8 +28,8 @@ for t = 0: step: (rocket.t_stage(1) - step)
     
     rocket = rocket.update(t+1, X_count(index-1, :));
 end
+index_stage1 = index - 1;% 截取一级数据长度
 % 二级
-
 for t = rocket.t_stage(1): step: (rocket.t_stage(2)+rocket.t_stage(1) - step)
     [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket);
     
@@ -123,6 +125,7 @@ if rocket.Rc_e(2) < 0
 end
 fprintf('导弹打击点经度：%.2f°, 纬度：%.2f°\n', psi, phi);
 
+%% 主动段数据可视化
 display = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);
 % 计算主动段数据长度
 N_powered = size(t_powered,1);
@@ -152,12 +155,24 @@ for i = 1:size(t_powered,1)
     n_display(i) = display.n;
 end
 
-%% 绘制主动段数据
+% 计算最大攻角、最大动压和最大法向过载
+[max_alpha, idx_max_alpha] = min(alpha_display(1:index_stage1));
+[max_q, idx_max_q] = max(q_display(1:index_stage1));
+[max_n, idx_max_n] = max(n_display(1:index_stage1));
+
+% 打印到终端
+fprintf('一级飞行时最大攻角: %f° 在时间: %fs\n', max_alpha, t_powered(idx_max_alpha));
+fprintf('一级飞行时最大动压: %fPa 在时间: %fs\n', max_q, t_powered(idx_max_q));
+fprintf('一级飞行时最大法向过载: %fg 在时间: %fs\n', max_n, t_powered(idx_max_n));
+
+% 绘制主动段数据
 figure(4);
 hold on;  % 允许在同一张图上绘制多条曲线
 
 % 绘制攻角
 plot(t_powered, alpha_display, 'r');  % 使用红色
+plot(t_powered(idx_max_alpha), max_alpha, 'o','MarkerFaceColor','k','HandleVisibility','off');
+text(t_powered(idx_max_alpha), max_alpha, sprintf('一级飞行时最大攻角:\n%f°', max_alpha));
 % 绘制俯仰角
 plot(t_powered, pitch_display, 'g');  % 使用绿色
 % 绘制弹道倾角
@@ -189,11 +204,15 @@ title('速度随时间变化');
 grid on;
 
 subplot(3,2,3);
+hold on;
 plot(t_powered, q_display);
+plot(t_powered(idx_max_q), max_q, 'o','MarkerFaceColor','k','HandleVisibility','off');
+text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%fPa', max_q));
 xlabel('时间/s');
 ylabel('动压/Pa');
 title('动压随时间变化');
 grid on;
+hold off;
 
 subplot(3,2,4);
 plot(t_powered, m_display);
@@ -217,11 +236,15 @@ title('地理纬度随时间变化');
 grid on;
 
 figure(6);
+hold on;
 plot(t_powered, n_display);
+plot(t_powered(idx_max_n), max_n, 'o','MarkerFaceColor','k','HandleVisibility','off');
+text(t_powered(idx_max_n), max_n, sprintf('一级飞行时最大法向过载:\n%fg', max_n));
 xlabel('时间/s');
 ylabel('过载/g');
 title('过载随时间变化');
 grid on;
+hold off;
 
 
 

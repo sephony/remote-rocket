@@ -65,8 +65,7 @@ classdef Rocket
             obj.A_L0 = A_L0;
             obj.theta_T0 = Earth.theta_L2T(theta_L0);
             obj.Phi_T0 = Earth.Phi_L2T(Phi_L0);
-            disp('发射点参数:')
-            fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', Earth.rad2deg(A_L0), Earth.rad2deg(theta_L0), Earth.rad2deg(Phi_L0));
+           
             % 发射点地心距离
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
