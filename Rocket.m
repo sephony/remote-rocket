@@ -37,7 +37,7 @@ classdef Rocket
         Phi_T;              % 火箭天文纬度
         
         q;                  % 动压
-        overload;           % todo过载
+        n;                  % 过载
         
     end
     properties
@@ -71,6 +71,7 @@ classdef Rocket
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
             obj.R0_L = Rotation.L2E(A_L0, theta_L0, Phi_L0)' * obj.R0_e;
+            
             % 火箭状态量初始化
             obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
             obj.A_L = A_L0;
@@ -97,7 +98,7 @@ classdef Rocket
             obj.Rc_L = obj.get_Rc_L();
             obj.r = norm(obj.Rc_e);
             obj.v = norm(obj.V_launch);
-            
+            % 计算姿态角
             [obj.pitch, obj.yaw, obj.roll] = Rocket.interpolation(t, obj.data);
             % 计算弹道倾角和弹道偏角
             if obj.V_launch(2) < 1 || obj.V_launch(1) < 0.0001
@@ -107,8 +108,9 @@ classdef Rocket
                 obj.theta_v = atan(obj.V_launch(2) / obj.V_launch(1));
                 obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
             end
-            
-            obj.sigma = 0;
+            obj.sigma = 0; % 计算倾侧角
+            % 计算攻角
+            obj.alpha = obj.pitch - obj.theta_v;
             
             % obj.A_L = atan2(obj.R_launch(2), obj.R_launch(1)); % todo 计算地理方位角
             obj.theta_L = atan2(obj.Rc_e(2), obj.Rc_e(1));
@@ -120,6 +122,8 @@ classdef Rocket
             obj.h = obj.r - obj.r_Ue;
             
             obj.q = Rocket.get_q(obj.h, obj.v);
+            R = obj.R_v();
+            obj.n = R(2) / (obj.m * Earth.g_0);
         end
         
         %% 力计算
@@ -168,7 +172,7 @@ classdef Rocket
         end
         % 火箭受到的气动力（发射坐标系下）
         function R_L = R_L(obj)
-            % todo气动力在速度坐标系下的分量
+            % 气动力在速度坐标系下的分量
             R = obj.R_v();
             % 气动力在发射坐标系下的分量
             R_L = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v)' * R;
@@ -225,18 +229,17 @@ classdef Rocket
         end
         % 插值函数，平滑程序俯仰角
         function [pitch_angle,yaw_angle,roll_angle] = interpolation(t, data)
+            d2r = pi / 180;
+            i = floor(t * 10) + 1;
             if 0 <= t && t < Rocket.t_stage(1) + Rocket.t_stage(2) + Rocket.t_stage(3)
-                d2r = pi / 180;
-                i = floor(t * 10) + 1;
-                
                 pitch_angle = (data(i,2) + (data(i+1,2)-data(i,2)) / (data(i+1,1) - data(i,1)) * (t - data(i,1))) * d2r;
-                yaw_angle = 0;
-                roll_angle = 0;
+            elseif t == Rocket.t_stage(1) + Rocket.t_stage(2) + Rocket.t_stage(3)
+                pitch_angle = data(i,2) * d2r;
             else
                 pitch_angle = 0;
-                yaw_angle = 0;
-                roll_angle = 0;
             end
+            yaw_angle = 0;
+            roll_angle = 0;
         end
     end
 end
