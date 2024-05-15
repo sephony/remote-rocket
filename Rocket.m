@@ -1,5 +1,5 @@
 classdef Rocket
-    properties(Constant)%% 常量
+    properties(Constant)
         %% 火箭参数
         m_stage = [18800 5400 1300];        % 各级火箭质量
         d_stage = [2.0 2.0 1.0];            % 各级火箭直径
@@ -8,7 +8,7 @@ classdef Rocket
         t_stage = [72 71 64];               % 各级工作时间
         
     end
-    properties%% 状态变量
+    properties
         %% 火箭状态
         t;                  % 火箭飞行时间
         X;                  % 火箭状态量
@@ -25,6 +25,8 @@ classdef Rocket
         sigma;              % 火箭倾侧角
         alpha;              % 火箭攻角
         
+        Rc_e;               % 火箭地心矢径(地心坐标系下)
+        Rc_L;               % 火箭地心矢径（发射坐标系下）
         r;                  % 火箭地心距离
         r_Ue;               % 火箭星下点地心距
         h;                  % 火箭海拔高度
@@ -38,7 +40,6 @@ classdef Rocket
         
         q;                  % 动压
         n;                  % 过载
-        
     end
     properties
         %% 发射点参数
@@ -49,14 +50,11 @@ classdef Rocket
         r0;                 % 发射点地心距离
         R0_e;               % 发射点地心矢径(地心坐标系下)
         R0_L;               % 发射点地心矢径（发射坐标系下）
-    end
-    properties
-        %% 火箭参数
-        Rc_e;               % 火箭地心矢径(地心坐标系下)
-        Rc_L;               % 火箭地心矢径（发射坐标系下）
         
         data;               % 程序俯仰角数据
     end
+    
+    
     
     methods
         %% 构造函数
@@ -65,7 +63,7 @@ classdef Rocket
             obj.A_L0 = A_L0;
             obj.theta_T0 = Earth.theta_L2T(theta_L0);
             obj.Phi_T0 = Earth.Phi_L2T(Phi_L0);
-           
+            
             % 发射点地心距离
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
@@ -138,6 +136,7 @@ classdef Rocket
             g_N = obj.g_N();
             g_L = g_N(1) / obj.r * obj.Rc_L + g_N(2) * Rotation.L2E(obj.A_L0, obj.theta_T0, obj.Phi_T0)' * [0; 0; 1];
         end
+        
         % 火箭受到的气动力（速度坐标系下）
         function R_v = R_v(obj)
             % 火箭直径
@@ -169,6 +168,7 @@ classdef Rocket
             
             R_v = [-D; L; Z];
         end
+        
         % 火箭受到的气动力（发射坐标系下）
         function R_L = R_L(obj)
             % 气动力在速度坐标系下的分量
