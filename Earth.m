@@ -24,6 +24,10 @@ classdef Earth
         function Phi_T = Phi_L2T(lati_G)
             Phi_T = lati_G + Earth.e_E * sin(2 * lati_G);
         end
+        % 角度转弧度
+        function rad = deg2rad(deg)
+            rad = deg * pi / 180;
+        end
         % 弧度转角度
         function deg = rad2deg(rad)
             deg = rad * 180 / pi;

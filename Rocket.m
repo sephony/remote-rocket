@@ -12,8 +12,8 @@ classdef Rocket
         %% 火箭状态
         t;                  % 火箭飞行时间
         X;                  % 火箭状态量
-        R_launch;           % 火箭位置（发射坐标系下）
-        V_launch;           % 火箭速度（发射坐标系下）
+        R_launch;           % 火箭位置矢量（发射坐标系下）
+        V_launch;           % 火箭速度矢量（发射坐标系下）
         m;                  % 火箭质量
         dm;                 % 各级发动机秒耗量
         
@@ -32,7 +32,6 @@ classdef Rocket
         h;                  % 火箭海拔高度
         v;                  % 火箭速度大小
         
-        A_L;                % 火箭地理方位角
         theta_L;            % 火箭地理经度
         Phi_L;              % 火箭地理纬度
         theta_T;            % 火箭天文经度
@@ -55,7 +54,6 @@ classdef Rocket
     end
     
     
-    
     methods
         %% 构造函数
         function obj = Rocket(A_L0, theta_L0, Phi_L0, pitch_data)
@@ -63,7 +61,6 @@ classdef Rocket
             obj.A_L0 = A_L0;
             obj.theta_T0 = Earth.theta_L2T(theta_L0);
             obj.Phi_T0 = Earth.Phi_L2T(Phi_L0);
-            
             % 发射点地心距离
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
@@ -71,10 +68,14 @@ classdef Rocket
             
             % 火箭状态量初始化
             obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
-            obj.A_L = A_L0;
             obj.data = pitch_data;
-            obj = obj.update(0, obj.X);
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
+            % 火箭姿态初始化
+            obj.yaw = 0;
+            obj.roll = 0;
+            obj.sigma = 0;
+            % 更新状态
+            obj = obj.update(0, obj.X);
         end
         
         %% 更新状态(根据变化后的X更新状态量)
@@ -95,8 +96,6 @@ classdef Rocket
             obj.Rc_L = obj.get_Rc_L();
             obj.r = norm(obj.Rc_e);
             obj.v = norm(obj.V_launch);
-            % 计算姿态角
-            [obj.pitch, obj.yaw, obj.roll] = Rocket.interpolation(t, obj.data);
             % 计算弹道倾角和弹道偏角
             if obj.V_launch(2) < 1 || obj.V_launch(1) < 0.0001
                 obj.theta_v = pi/2;
@@ -105,11 +104,9 @@ classdef Rocket
                 obj.theta_v = atan(obj.V_launch(2) / obj.V_launch(1));
                 obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
             end
-            obj.sigma = 0; % 计算倾侧角
-            % 计算攻角
+            obj.pitch = Rocket.interpolation(t, obj.data);
             obj.alpha = obj.pitch - obj.theta_v;
             
-            % obj.A_L = atan2(obj.R_launch(2), obj.R_launch(1)); % todo 计算地理方位角
             obj.theta_L = atan2(obj.Rc_e(2), obj.Rc_e(1));
             obj.Phi_L = asin(obj.Rc_e(3) / obj.r);
             obj.theta_T = Earth.theta_L2T(obj.theta_L);
@@ -147,7 +144,7 @@ classdef Rocket
             elseif Rocket.t_stage(1) + Rocket.t_stage(2) <= obj.t
                 d = Rocket.d_stage(3);
             end
-            S = pi * (d / 2)^2;     % 特征面积
+            S = pi * (d / 2) ^ 2;     % 特征面积
             
             % 计算气动参数
             if(0 <= obj.h && obj.h <= 40000)
@@ -209,9 +206,6 @@ classdef Rocket
         % 火箭地心矢径（地心坐标系下）
         function Rc_e = get_Rc_e(obj)
             Rc_e = Rotation.L2E(obj.A_L0, obj.theta_T0, obj.Phi_T0) * obj.R_launch + obj.R0_e;
-            
-            % 另一种写法，与上面等价
-            % Rc_e = Rotation.L2E(obj.A_L0, obj.theta_T0, obj.Phi_T0) * obj.get_Rc_L();
         end
         
         % 火箭地心矢径(发射坐标系下)
@@ -227,7 +221,7 @@ classdef Rocket
             q = 0.5 * rho * v^2;                % 动压
         end
         % 插值函数，平滑程序俯仰角
-        function [pitch_angle,yaw_angle,roll_angle] = interpolation(t, data)
+        function pitch_angle = interpolation(t, data)
             d2r = pi / 180;
             i = floor(t * 10) + 1;
             if 0 <= t && t < Rocket.t_stage(1) + Rocket.t_stage(2) + Rocket.t_stage(3)
@@ -237,8 +231,6 @@ classdef Rocket
             else
                 pitch_angle = 0;
             end
-            yaw_angle = 0;
-            roll_angle = 0;
         end
     end
 end

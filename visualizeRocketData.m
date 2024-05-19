@@ -1,6 +1,41 @@
-% 功能: 可视化火箭主动段各参数数据
-function visualizeRocketData(display, X_powered, t_powered)
+function visualizeRocketData(display, X_powered, t_powered, X_whole)
+%% 绘制主动段弹道曲线（发射坐标系下）
+figure (1);
+plot3(X_powered(:,1),X_powered(:,3),X_powered(:,2));
+axis equal;
+grid on;
+xlabel('x/m');
+ylabel('z/m');
+zlabel('y/m');
+title('发射坐标系下主动段弹道曲线');
 
+%% 绘制全弹道曲线（发射坐标系下）
+figure (2);
+plot3(X_whole(:,1),X_whole(:,3),X_whole(:,2));
+axis equal;
+grid on;
+xlabel('x/m');
+ylabel('z/m');
+zlabel('y/m');
+title('发射坐标系下全弹道曲线');
+
+R = X_whole(:,1:3);
+% 所有时刻的地心坐标系下火箭地心矢量
+R_E = Rotation.L2E(display.A_L0, display.theta_T0, display.Phi_T0) * R' + display.R0_e;
+
+%% 在地球上可视化弹道曲线（地心坐标系下）
+figure(3);
+traj = plot3(R_E(1,:), R_E(2,:), R_E(3,:));
+traj.LineWidth = 3;
+view(3);
+hold on
+ellipsoid(0, 0, 0, Earth.a_e, Earth.a_e, Earth.b_e);
+axis equal
+grid on
+title('地心坐标系下弹道曲线');
+hold off
+
+%% 可视化火箭主动段各参数数据
 % 计算主动段数据长度
 N_powered = size(t_powered,1);
 h_display = zeros(N_powered ,1);
