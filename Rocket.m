@@ -117,7 +117,7 @@ classdef Rocket
             
             obj.q = Rocket.get_q(obj.h, obj.v);
             R = obj.R_v();
-            obj.n = R(2) / (obj.m * Earth.g_0);
+            obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
         end
         
         %% 力计算
