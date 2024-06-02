@@ -55,59 +55,66 @@ for i = 1:size(t_powered,1)
     pitch_display(i) = Earth.rad2deg(display.pitch);
     theta_v_display(i) = Earth.rad2deg(display.theta_v);
     alpha_display(i) = Earth.rad2deg(display.alpha);
-    h_display(i) = display.h;
+    h_display(i) = display.h * 0.001;
     v_display(i) = display.v;
     m_display(i) = display.m;
-    q_display(i) = display.q;
+    q_display(i) = display.q * 0.001;
     theta_L_display(i) = Earth.rad2deg(display.theta_L);
     Phi_L_display(i) =  Earth.rad2deg(display.Phi_L);
     n_display(i) = display.n;
 end
-% 截取一级数据长度
-index_stage1 = find(t_powered == display.t_stage(1));
-% 计算最大攻角、最大动压和最大法向过载
-[max_alpha, idx_max_alpha] = min(alpha_display(1:index_stage1));
-[max_q, idx_max_q] = max(q_display(1:index_stage1));
-[max_n, idx_max_n] = max(n_display(1:index_stage1));
+% 获取各级关机点时间对应的索引
+idx_stage1 = find(t_powered == display.t_stage(1), 1);
+idx_stage2 = find(t_powered == display.t_stage(1) + display.t_stage(2), 1);
+idx_stage3 = find(t_powered == display.t_stage(1) + display.t_stage(2) + display.t_stage(3), 1);
+vec_idx = [idx_stage1, idx_stage2, idx_stage3];
+%% 绘制一级飞行时最大攻角、最大动压和最大法向过载
+% 计算一级飞行最大攻角、最大动压和最大法向过载
+[max_alpha, idx_max_alpha] = min(alpha_display(1:idx_stage1));
+[max_q, idx_max_q] = max(q_display(1:idx_stage1));
+[max_n, idx_max_n] = max(n_display(1:idx_stage1));
 
 % 打印到终端
 fprintf('一级飞行时最大攻角: %f° 在时间: %fs\n', max_alpha, t_powered(idx_max_alpha));
 fprintf('一级飞行时最大动压: %fPa 在时间: %fs\n', max_q, t_powered(idx_max_q));
 fprintf('一级飞行时最大法向过载: %fg 在时间: %fs\n', max_n, t_powered(idx_max_n));
 
-% 绘制主动段数据
 figure(4);
 hold on;  % 允许在同一张图上绘制多条曲线
-
 % 绘制攻角
 plot(t_powered, alpha_display, 'r');  % 使用红色
 plot(t_powered(idx_max_alpha), max_alpha, 'o','MarkerFaceColor','k','HandleVisibility','off');
-text(t_powered(idx_max_alpha), max_alpha, sprintf('一级飞行时最大攻角:\n%f°', max_alpha));
+text(t_powered(idx_max_alpha), max_alpha, sprintf('一级飞行时最大攻角:\n%.2f°', max_alpha));
 % 绘制俯仰角
 plot(t_powered, pitch_display, 'g');  % 使用绿色
 % 绘制弹道倾角
 plot(t_powered, theta_v_display, 'b');  % 使用蓝色
+hold off;  % 结束绘制多条曲线
 
 xlabel('时间/s');
 ylabel('角度/°');
 title('攻角、俯仰角和弹道倾角随时间变化');
 legend('攻角', '俯仰角', '弹道倾角');  % 添加图例
-
 ylim([-40 90]);  % 设置y轴范围为0-90°
-
 grid on;
-hold off;  % 结束绘制多条曲线
 
+%% 绘制主动段数据
 figure(5);
 subplot(3,2,1);
+hold on;
 plot(t_powered, h_display);
+plotBornoutPoint(t_powered, h_display, vec_idx);
+hold off;
 xlabel('时间/s');
-ylabel('高度/m');
+ylabel('高度/km');
 title('高度随时间变化');
 grid on;
 
 subplot(3,2,2);
+hold on;
 plot(t_powered, v_display);
+plotBornoutPoint(t_powered, v_display, vec_idx);
+hold off;
 xlabel('时间/s');
 ylabel('速度/m/s');
 title('速度随时间变化');
@@ -117,29 +124,39 @@ subplot(3,2,3);
 hold on;
 plot(t_powered, q_display);
 plot(t_powered(idx_max_q), max_q, 'o','MarkerFaceColor','k','HandleVisibility','off');
-text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%fPa', max_q));
+text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%.2fkPa', max_q));
+plotBornoutPoint(t_powered, q_display, vec_idx);
+hold off;
 xlabel('时间/s');
 ylabel('动压/Pa');
 title('动压随时间变化');
 grid on;
-hold off;
 
 subplot(3,2,4);
+hold on;
 plot(t_powered, m_display);
+plotBornoutPoint(t_powered, m_display, vec_idx);
+hold off;
 xlabel('时间/s');
 ylabel('质量/kg');
 title('质量随时间变化');
 grid on;
 
 subplot(3,2,5);
+hold on;
 plot(t_powered, theta_L_display);
+plotBornoutPoint(t_powered, theta_L_display, vec_idx);
+hold off;
 xlabel('时间/s');
 ylabel('地理经度/°');
 title('地理经度随时间变化');
 grid on;
 
 subplot(3,2,6);
+hold on;
 plot(t_powered, Phi_L_display);
+plotBornoutPoint(t_powered, Phi_L_display, vec_idx);
+hold off;
 xlabel('时间/s');
 ylabel('地理纬度/°');
 title('地理纬度随时间变化');
@@ -149,10 +166,17 @@ figure(6);
 hold on;
 plot(t_powered, n_display);
 plot(t_powered(idx_max_n), max_n, 'o','MarkerFaceColor','k','HandleVisibility','off');
-text(t_powered(idx_max_n), max_n, sprintf('一级飞行时最大法向过载:\n%fg', max_n));
+text(t_powered(idx_max_n), max_n, sprintf('一级飞行时最大法向过载:\n%.2fg', max_n));
+plotBornoutPoint(t_powered, n_display, vec_idx);
+hold off;
 xlabel('时间/s');
 ylabel('过载/g');
 title('过载随时间变化');
 grid on;
-hold off;
+end
+
+function plotBornoutPoint(t, data, indexs)
+for i = 1:length(indexs)
+    plot(t(indexs(i)), data(indexs(i)), '*');
+end
 end
