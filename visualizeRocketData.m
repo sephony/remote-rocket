@@ -9,7 +9,7 @@ vec_idx = [idx_stage1, idx_stage2, idx_stage3];
 figure (1);
 hold on
 plot3(X_powered(:,1),X_powered(:,3),X_powered(:,2));
-plotBornoutPoint3(X_powered, vec_idx);
+plotShutdownPoint3(X_powered, vec_idx);
 hold off
 view(3);
 axis equal;
@@ -24,7 +24,7 @@ legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关
 figure (2);
 hold on
 plot3(X_whole(:,1),X_whole(:,3),X_whole(:,2));
-plotBornoutPoint3(X_whole, vec_idx);
+plotShutdownPoint3(X_whole, vec_idx);
 hold off
 view(3);
 axis equal;
@@ -35,18 +35,19 @@ zlabel('y/m');
 title('发射坐标系下全弹道曲线');
 legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
+%% 在地球上可视化弹道曲线（地心坐标系下）
 R = X_whole(:,1:3);
 % 所有时刻的地心坐标系下火箭地心矢量
 R_E = Rotation.L2E(display.A_L0, display.theta_T0, display.Phi_T0) * R' + display.R0_e;
 R_E = R_E';
-%% 在地球上可视化弹道曲线（地心坐标系下）
+
 figure(3);
 hold on
 plot3(R_E(:,1), R_E(:,2), R_E(:,3), 'LineWidth', 3);
-ellipsoid(0, 0, 0, Earth.a_e, Earth.a_e, Earth.b_e);
 for i = 1:length(vec_idx)
     plot3(R_E(vec_idx(i),1), R_E(vec_idx(i),2), R_E(vec_idx(i),3), '*');
 end
+ellipsoid(0, 0, 0, Earth.a_e, Earth.a_e, Earth.b_e);
 hold off
 view(3);
 axis equal
@@ -54,7 +55,7 @@ grid on
 title('地心坐标系下弹道曲线');
 legend('弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
-%% 可视化火箭主动段各参数数据
+%% 计算火箭主动段各参数数据
 % 计算主动段数据长度
 N_powered = size(t_powered,1);
 h_display = zeros(N_powered ,1);
@@ -95,17 +96,13 @@ fprintf('一级飞行时最大动压: %fPa 在时间: %fs\n', max_q, t_powered(i
 fprintf('一级飞行时最大法向过载: %fg 在时间: %fs\n', max_n, t_powered(idx_max_n));
 
 figure(4);
-hold on  % 允许在同一张图上绘制多条曲线
-% 绘制攻角
-plot(t_powered, alpha_display, 'r');  % 使用红色
+hold on
+plot(t_powered, alpha_display, 'r');    % 绘制攻角
+plot(t_powered, pitch_display, 'g');    % 绘制俯仰角
+plot(t_powered, theta_v_display, 'b');  % 绘制弹道倾角
 plot(t_powered(idx_max_alpha), max_alpha, 'o','MarkerFaceColor','k','HandleVisibility','off');
 text(t_powered(idx_max_alpha), max_alpha, sprintf('一级飞行时最大攻角:\n%.2f°', max_alpha));
-% 绘制俯仰角
-plot(t_powered, pitch_display, 'g');  % 使用绿色
-% 绘制弹道倾角
-plot(t_powered, theta_v_display, 'b');  % 使用蓝色
-hold off  % 结束绘制多条曲线
-
+hold off
 xlabel('时间/s');
 ylabel('角度/°');
 title('攻角、俯仰角和弹道倾角随时间变化');
@@ -115,88 +112,97 @@ grid on;
 
 %% 绘制主动段数据
 figure(5);
-subplot(3,2,1);
+subplot(3,3,1);
 hold on
 plot(t_powered, h_display);
-plotBornoutPoint(t_powered, h_display, vec_idx);
+plotShutdownPoint(t_powered, h_display, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('高度/km');
 title('高度随时间变化');
 grid on;
 
-subplot(3,2,2);
+subplot(3,3,2);
 hold on
 plot(t_powered, v_display);
-plotBornoutPoint(t_powered, v_display, vec_idx);
+plotShutdownPoint(t_powered, v_display, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('速度/m/s');
 title('速度随时间变化');
 grid on;
 
-subplot(3,2,3);
-hold on
-plot(t_powered, q_display);
-plot(t_powered(idx_max_q), max_q, 'o','MarkerFaceColor','k','HandleVisibility','off');
-text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%.2fkPa', max_q));
-plotBornoutPoint(t_powered, q_display, vec_idx);
-hold off
-xlabel('时间/s');
-ylabel('动压/Pa');
-title('动压随时间变化');
-grid on;
-
-subplot(3,2,4);
-hold on
-plot(t_powered, m_display);
-plotBornoutPoint(t_powered, m_display, vec_idx);
-hold off
-xlabel('时间/s');
-ylabel('质量/kg');
-title('质量随时间变化');
-grid on;
-
-subplot(3,2,5);
+subplot(3,3,4);
 hold on
 plot(t_powered, theta_L_display);
-plotBornoutPoint(t_powered, theta_L_display, vec_idx);
+plotShutdownPoint(t_powered, theta_L_display, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('地理经度/°');
 title('地理经度随时间变化');
 grid on;
 
-subplot(3,2,6);
+subplot(3,3,5);
 hold on
 plot(t_powered, Phi_L_display);
-plotBornoutPoint(t_powered, Phi_L_display, vec_idx);
+plotShutdownPoint(t_powered, Phi_L_display, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('地理纬度/°');
 title('地理纬度随时间变化');
 grid on;
 
-figure(6);
+subplot(3,3,7);
+hold on
+plot(t_powered, m_display);
+plotShutdownPoint(t_powered, m_display, vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('质量/kg');
+title('质量随时间变化');
+grid on;
+
+subplot(3,3,8);
+hold on
+plot(t_powered, q_display);
+plot(t_powered(idx_max_q), max_q, 'o','MarkerFaceColor','k','HandleVisibility','off');
+text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%.2fkPa', max_q));
+plotShutdownPoint(t_powered, q_display, vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('动压/Pa');
+title('动压随时间变化');
+grid on;
+
+subplot(3,3,9);
 hold on
 plot(t_powered, n_display);
 plot(t_powered(idx_max_n), max_n, 'o','MarkerFaceColor','k','HandleVisibility','off');
 text(t_powered(idx_max_n), max_n, sprintf('一级飞行时最大法向过载:\n%.2fg', max_n));
-plotBornoutPoint(t_powered, n_display, vec_idx);
+plotShutdownPoint(t_powered, n_display, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('过载/g');
-title('过载随时间变化');
+title('法向过载随时间变化');
 grid on;
+
+subplot(3,3,3);
+hold on
+plot(0,0,'*');
+plot(0,0,'*');
+plot(0,0,'*');
+legend('一级关机点', '二级关机点', '三级关机点');
+hold off
+axis off;
 end
 
-function plotBornoutPoint(t, data, indexs)
+function plotShutdownPoint(t, data, indexs)
 for i = 1:length(indexs)
     plot(t(indexs(i)), data(indexs(i)), '*');
 end
 end
 
-function plotBornoutPoint3(X, indexs)
+function plotShutdownPoint3(X, indexs)
 for i = 1:length(indexs)
     plot3(X(indexs(i),1), X(indexs(i),3), X(indexs(i),2), '*');
 end
