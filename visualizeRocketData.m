@@ -18,6 +18,7 @@ xlabel('x/m');
 ylabel('z/m');
 zlabel('y/m');
 title('发射坐标系下主动段弹道曲线');
+legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
 %% 绘制全弹道曲线（发射坐标系下）
 figure (2);
@@ -32,6 +33,7 @@ xlabel('x/m');
 ylabel('z/m');
 zlabel('y/m');
 title('发射坐标系下全弹道曲线');
+legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
 R = X_whole(:,1:3);
 % 所有时刻的地心坐标系下火箭地心矢量
@@ -40,15 +42,17 @@ R_E = R_E';
 %% 在地球上可视化弹道曲线（地心坐标系下）
 figure(3);
 hold on
-traj = plot3(R_E(:,1), R_E(:,3), R_E(:,2));
-traj.LineWidth = 3;
-view(3);
+plot3(R_E(:,1), R_E(:,2), R_E(:,3), 'LineWidth', 3);
 ellipsoid(0, 0, 0, Earth.a_e, Earth.a_e, Earth.b_e);
-plotBornoutPoint3(R_E, vec_idx);
+for i = 1:length(vec_idx)
+    plot3(R_E(vec_idx(i),1), R_E(vec_idx(i),2), R_E(vec_idx(i),3), '*');
+end
 hold off
+view(3);
 axis equal
 grid on
 title('地心坐标系下弹道曲线');
+legend('弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
 %% 可视化火箭主动段各参数数据
 % 计算主动段数据长度
