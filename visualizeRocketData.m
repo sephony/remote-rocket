@@ -91,9 +91,9 @@ end
 [max_n, idx_max_n] = max(n_display(1:idx_stage1));
 
 % 打印到终端
-fprintf('一级飞行时最大攻角: %f° 在时间: %fs\n', max_alpha, t_powered(idx_max_alpha));
-fprintf('一级飞行时最大动压: %fPa 在时间: %fs\n', max_q, t_powered(idx_max_q));
-fprintf('一级飞行时最大法向过载: %fg 在时间: %fs\n', max_n, t_powered(idx_max_n));
+fprintf('一级飞行时最大攻角: %.2f° 在时间: %.2fs\n', max_alpha, t_powered(idx_max_alpha));
+fprintf('一级飞行时最大动压: %.2fkPa 在时间: %.2fs\n', max_q, t_powered(idx_max_q));
+fprintf('一级飞行时最大法向过载: %.2fg 在时间: %.2fs\n\n', max_n, t_powered(idx_max_n));
 
 figure(4);
 hold on
@@ -188,22 +188,22 @@ grid on;
 
 subplot(3,3,3);
 hold on
-plot(0,0,'*');
-plot(0,0,'*');
-plot(0,0,'*');
+plot(Inf,Inf, '*','Color','r');
+plot(Inf,Inf, '*','Color','g');
+plot(Inf,Inf, '*','Color','b');
 legend('一级关机点', '二级关机点', '三级关机点');
 hold off
 axis off;
 end
 
 function plotShutdownPoint(t, data, indexs)
-for i = 1:length(indexs)
-    plot(t(indexs(i)), data(indexs(i)), '*');
-end
+plot(t(indexs(1)), data(indexs(1)), '*', 'Color', 'r');
+plot(t(indexs(2)), data(indexs(2)), '*', 'Color', 'g');
+plot(t(indexs(3)), data(indexs(3)), '*', 'Color', 'b');
 end
 
 function plotShutdownPoint3(X, indexs)
-for i = 1:length(indexs)
-    plot3(X(indexs(i),1), X(indexs(i),3), X(indexs(i),2), '*');
-end
+plot3(X(indexs(1),1), X(indexs(1),3), X(indexs(1),2), '*', 'Color', 'r');
+plot3(X(indexs(2),1), X(indexs(2),3), X(indexs(2),2), '*', 'Color', 'g');
+plot3(X(indexs(3),1), X(indexs(3),3), X(indexs(3),2), '*', 'Color', 'b');
 end
