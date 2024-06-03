@@ -68,7 +68,7 @@ clear X_count t_count;
 %% 数据可视化
 tStart_visualize = tic;
 display = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);
-visualizeRocketData(display, X_powered, t_powered, X_whole);
+visualizeRocketData(display, X_powered, t_powered, X_whole, t_whole);
 tEnd_visualize = toc(tStart_visualize);
 fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
 toc;
