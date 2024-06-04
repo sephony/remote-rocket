@@ -97,12 +97,25 @@ classdef Rocket
             obj.r = norm(obj.Rc_e);
             obj.v = norm(obj.V_launch);
             % 计算弹道倾角和弹道偏角
-            if obj.V_launch(2) < 1 || obj.V_launch(1) < 0.0001
-                obj.theta_v = pi/2;
-                obj.psi_v = 0;
+            if obj.V_launch(2) >= 0             %上升段
+                if  obj.V_launch(1) < 0.0001    %火箭起飞判定
+                    obj.theta_v = pi/2;
+                    obj.psi_v = 0;
+                else
+                    obj.theta_v = atan(obj.V_launch(2) / obj.V_launch(1));
+                    obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
+                end
             else
-                obj.theta_v = atan(obj.V_launch(2) / obj.V_launch(1));
-                obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
+                if abs(obj.V_launch(1)) < 0.0001%防止除0，平滑过渡-90°
+                    obj.theta_v = -pi/2;
+                    obj.psi_v = 0;
+                else
+                    obj.theta_v = atan(obj.V_launch(2) / obj.V_launch(1));
+                    if obj.V_launch(1) < 0      %实际弹道倾角在-90°到-180°之间
+                        obj.theta_v = obj.theta_v - pi;
+                    end
+                    obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
+                end
             end
             obj.pitch = Rocket.interpolation(t, obj.data);
             obj.alpha = obj.pitch - obj.theta_v;

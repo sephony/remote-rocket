@@ -57,17 +57,17 @@ legend('弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
 %% 计算火箭主动段各参数数据
 % 计算主动段数据长度
-N_powered = size(t_powered,1);
-h_display = zeros(N_powered ,1);
-v_display = zeros(N_powered ,1);
-theta_v_display = zeros(N_powered ,1);
-q_display = zeros(N_powered ,1);
-n_display = zeros(N_powered ,1);
-alpha_display = zeros(N_powered ,1);
-pitch_display = zeros(N_powered ,1);
-m_display = zeros(N_powered ,1);
-theta_L_display = zeros(N_powered ,1);
-Phi_L_display = zeros(N_powered ,1);
+N_powered = size(t_powered, 1);
+h_display = zeros(N_powered, 1);
+v_display = zeros(N_powered, 1);
+theta_v_display = zeros(N_powered, 1);
+q_display = zeros(N_powered, 1);
+n_display = zeros(N_powered, 1);
+alpha_display = zeros(N_powered, 1);
+pitch_display = zeros(N_powered, 1);
+m_display = zeros(N_powered, 1);
+theta_L_display = zeros(N_powered, 1);
+Phi_L_display = zeros(N_powered, 1);
 
 % 将主动段数据赋值给 display
 for i = 1:size(t_powered,1)
@@ -197,23 +197,25 @@ axis off;
 
 %% 计算火箭全弹道各参数数据
 % 计算全弹道数据长度
-N_whole = size(t_whole,1);
-h_display = zeros(N_whole ,1);
-v_display = zeros(N_whole ,1);
-theta_v_display = zeros(N_whole ,1);
-q_display = zeros(N_whole ,1);
-n_display = zeros(N_whole ,1);
-alpha_display = zeros(N_whole ,1);
-pitch_display = zeros(N_whole ,1);
-m_display = zeros(N_whole ,1);
-theta_L_display = zeros(N_whole ,1);
-Phi_L_display = zeros(N_whole ,1);
+N_whole = size(t_whole, 1);
+h_display = zeros(N_whole, 1);
+v_display = zeros(N_whole, 1);
+theta_v_display = zeros(N_whole, 1);
+psi_v_display = zeros(N_whole, 1);
+q_display = zeros(N_whole, 1);
+n_display = zeros(N_whole, 1);
+alpha_display = zeros(N_whole, 1);
+pitch_display = zeros(N_whole, 1);
+m_display = zeros(N_whole, 1);
+theta_L_display = zeros(N_whole, 1);
+Phi_L_display = zeros(N_whole, 1);
 
 % 将全弹道数据赋值给 display
 for i = 1:size(t_whole,1)
     display = display.update(t_whole(i), X_whole(i,:));
     pitch_display(i) = Earth.rad2deg(display.pitch);
     theta_v_display(i) = Earth.rad2deg(display.theta_v);
+    psi_v_display(i) = Earth.rad2deg(display.psi_v);
     alpha_display(i) = Earth.rad2deg(display.alpha);
     h_display(i) = display.h * 0.001;
     v_display(i) = display.v;
@@ -265,6 +267,26 @@ xlabel('时间/s');
 ylabel('地理纬度/°');
 title('地理纬度随时间变化');
 grid on;
+
+subplot(3,3,6);
+hold on
+plot(t_whole, theta_v_display);
+plotShutdownPoint(t_whole, theta_v_display, vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('弹道倾角/°');
+title('弹道倾角随时间变化');
+grid on;
+
+% subplot(3,3,6);
+% hold on
+% plot(t_whole, psi_v_display);
+% plotShutdownPoint(t_whole, psi_v_display, vec_idx);
+% hold off
+% xlabel('时间/s');
+% ylabel('弹道偏角/°');
+% title('弹道倾角随时间变化');
+% grid on;
 
 subplot(3,3,7);
 hold on
