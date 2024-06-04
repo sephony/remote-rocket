@@ -8,14 +8,14 @@ vec_idx = [idx_stage1, idx_stage2, idx_stage3];
 %% 绘制主动段弹道曲线（发射坐标系下）
 figure (1);
 hold on
-plot3(X_powered(:,1),X_powered(:,3),X_powered(:,2));
+plot3(X_powered(:,3),X_powered(:,1),X_powered(:,2));
 plotShutdownPoint3(X_powered, vec_idx);
 hold off
 view(3);
 axis equal;
 grid on;
-xlabel('x/m');
-ylabel('z/m');
+xlabel('z/m');
+ylabel('x/m');
 zlabel('y/m');
 title('发射坐标系下主动段弹道曲线');
 legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关机点');
@@ -23,14 +23,14 @@ legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关
 %% 绘制全弹道曲线（发射坐标系下）
 figure (2);
 hold on
-plot3(X_whole(:,1),X_whole(:,3),X_whole(:,2));
+plot3(X_whole(:,3),X_whole(:,1),X_whole(:,2));
 plotShutdownPoint3(X_whole, vec_idx);
 hold off
 view(3);
 axis equal;
 grid on;
-xlabel('x/m');
-ylabel('z/m');
+xlabel('z/m');
+ylabel('x/m');
 zlabel('y/m');
 title('发射坐标系下全弹道曲线');
 legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
@@ -335,7 +335,7 @@ plot(t(indexs(3)), data(indexs(3)), '*', 'Color', 'b');
 end
 
 function plotShutdownPoint3(X, indexs)
-plot3(X(indexs(1),1), X(indexs(1),3), X(indexs(1),2), '*', 'Color', 'r');
-plot3(X(indexs(2),1), X(indexs(2),3), X(indexs(2),2), '*', 'Color', 'g');
-plot3(X(indexs(3),1), X(indexs(3),3), X(indexs(3),2), '*', 'Color', 'b');
+plot3(X(indexs(1),3), X(indexs(1),1), X(indexs(1),2), '*', 'Color', 'r');
+plot3(X(indexs(2),3), X(indexs(2),1), X(indexs(2),2), '*', 'Color', 'g');
+plot3(X(indexs(3),3), X(indexs(3),1), X(indexs(3),2), '*', 'Color', 'b');
 end
