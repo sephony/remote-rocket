@@ -72,15 +72,15 @@ Phi_L_display = zeros(N_powered, 1);
 % 将主动段数据赋值给 display
 for i = 1:size(t_powered,1)
     display = display.update(t_powered(i), X_powered(i,:));
-    pitch_display(i) = Earth.rad2deg(display.pitch);
-    theta_v_display(i) = Earth.rad2deg(display.theta_v);
-    alpha_display(i) = Earth.rad2deg(display.alpha);
+    pitch_display(i) = rad2deg(display.pitch);
+    theta_v_display(i) = rad2deg(display.theta_v);
+    alpha_display(i) = rad2deg(display.alpha);
     h_display(i) = display.h * 0.001;
     v_display(i) = display.v;
     m_display(i) = display.m;
     q_display(i) = display.q * 0.001;
-    theta_L_display(i) = Earth.rad2deg(display.theta_L);
-    Phi_L_display(i) =  Earth.rad2deg(display.Phi_L);
+    theta_L_display(i) = rad2deg(display.theta_L);
+    Phi_L_display(i) =  rad2deg(display.Phi_L);
     n_display(i) = display.n;
 end
 
@@ -213,16 +213,16 @@ Phi_L_display = zeros(N_whole, 1);
 % 将全弹道数据赋值给 display
 for i = 1:size(t_whole,1)
     display = display.update(t_whole(i), X_whole(i,:));
-    pitch_display(i) = Earth.rad2deg(display.pitch);
-    theta_v_display(i) = Earth.rad2deg(display.theta_v);
-    psi_v_display(i) = Earth.rad2deg(display.psi_v);
-    alpha_display(i) = Earth.rad2deg(display.alpha);
+    pitch_display(i) = rad2deg(display.pitch);
+    theta_v_display(i) = rad2deg(display.theta_v);
+    psi_v_display(i) = rad2deg(display.psi_v);
+    alpha_display(i) = rad2deg(display.alpha);
     h_display(i) = display.h * 0.001;
     v_display(i) = display.v;
     m_display(i) = display.m;
     q_display(i) = display.q * 0.001;
-    theta_L_display(i) = Earth.rad2deg(display.theta_L);
-    Phi_L_display(i) =  Earth.rad2deg(display.Phi_L);
+    theta_L_display(i) = rad2deg(display.theta_L);
+    Phi_L_display(i) =  rad2deg(display.Phi_L);
     n_display(i) = display.n;
 end
 

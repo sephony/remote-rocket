@@ -1,14 +1,14 @@
 clc; clear; close all;
 tic;
 %% 火箭发射点参数
-A_L0 = Earth.deg2rad(-20);      % 发射点地理方位角
-theta_L0 = Earth.deg2rad(60);   %（东经为正，西经为负）
-Phi_L0 = Earth.deg2rad(-30);    %（北纬为正，南纬为负）
+A_L0 = deg2rad(-20);      % 发射点地理方位角
+theta_L0 = deg2rad(60);   %（东经为正，西经为负）
+Phi_L0 = deg2rad(-30);    %（北纬为正，南纬为负）
 
 pitch_data = load('data/FiC.txt');   % 读取俯仰角飞行程序数据
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);    % 创建火箭对象
 disp('发射点参数:')
-fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', Earth.rad2deg(A_L0), Earth.rad2deg(theta_L0), Earth.rad2deg(Phi_L0));
+fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
 
 %% 微分方程参数设置
 step = 1;                       % 定义外部循环步长,默认是 1 秒
@@ -52,7 +52,7 @@ for t = (rocket.t_stage(1) + rocket.t_stage(2) + rocket.t_stage(3)) : step : 100
     % 按步长精确的落地判定，高度比速度应小于两倍步长
     if (rocket.h > 0) && ((rocket.h / rocket.v) < (2 * step))
         fprintf('导弹打击时间为：%.2fs （相对误差 < %.2fs)\n',t, step);
-        fprintf('导弹打击点经度：%.2f°, 纬度：%.2f°\n\n', Earth.rad2deg(rocket.theta_L), Earth.rad2deg(rocket.Phi_L));
+        fprintf('导弹打击点经度：%.2f°, 纬度：%.2f°\n\n', rad2deg(rocket.theta_L), rad2deg(rocket.Phi_L));
         break;
     end
 end
