@@ -10,10 +10,17 @@ pitch_data = load('data/FiC.txt');   % 读取俯仰角飞行程序数据
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);
 
 %% 弹道计算
+fprintf('正在解算弹道...\n');
+tStart_solve = tic;
 rocket = rocket.solve();
+tEnd_solve = toc(tStart_solve);
+fprintf('弹道解算的时间是 %.2f 秒\n\n', tEnd_solve);
 
 %% 数据可视化
+fprintf('正在可视化火箭参数...\n');
 tStart_visualize = tic;
 rocket = rocket.plot();
+tEnd_visualize = toc(tStart_visualize);
+fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
 
 toc;

@@ -143,21 +143,21 @@ classdef Rocket
         end
         
         function obj = solve(obj)
-            fprintf('正在解算弹道...\n');
-            tStart_solve = tic;
-            obj.trajectory = obj.trajectory.calc_powered();
-            obj.trajectory = obj.trajectory.calc_passive();
-            tEnd_solve = toc(tStart_solve);
-            fprintf('弹道解算的时间是 %.2f 秒\n\n', tEnd_solve);
+            tStart_powered = tic;
+            obj.trajectory = obj.trajectory.calc_powered("launch");
+            tEnd_powered = toc(tStart_powered);
+            fprintf('主动段弹道解算的时间是 %.2f 秒\n\n', tEnd_powered);
+            tStart_passive = tic;
+            obj.trajectory = obj.trajectory.calc_passive("launch");
+            tEnd_passive = toc(tStart_passive);
+            fprintf('被动段弹道解算的时间是 %.2f 秒\n', tEnd_passive);
         end
         
         function obj = plot(obj)
-            fprintf('正在可视化火箭参数...\n');
-            tStart_visualize = tic;
             obj.plotter = Plotter(obj);
-            obj.plotter = obj.plotter.plot();
-            tEnd_visualize = toc(tStart_visualize);
-            fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
+            obj.plotter = obj.plotter.plot_trajectoryCurve();
+            obj.plotter = obj.plotter.plot_poweredData();
+            obj.plotter = obj.plotter.plot_wholeData();
         end
         %% 力计算
         % 火箭受到的引力加速度（北天东地坐标系下）
