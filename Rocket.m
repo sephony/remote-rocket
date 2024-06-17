@@ -51,6 +51,9 @@ classdef Rocket
         R0_L;               % 发射点地心矢径（发射坐标系下）
         
         data;               % 程序俯仰角数据
+        
+        trajectory;         % 弹道对象
+        plotter;            % 可视化对象
     end
     
     
@@ -76,6 +79,12 @@ classdef Rocket
             obj.sigma = 0;
             % 更新状态
             obj = obj.update(0, obj.X);
+            
+            % 组合类初始化
+            obj.trajectory = Trajectory(obj);   % 创建弹道对象
+            obj.plotter = Plotter(obj);         % 创建可视化对象
+            disp('发射点参数:')
+            fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
         end
         
         %% 更新状态(根据变化后的X更新状态量)
@@ -133,6 +142,23 @@ classdef Rocket
             obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
         end
         
+        function obj = solve(obj)
+            fprintf('正在解算弹道...\n');
+            tStart_solve = tic;
+            obj.trajectory = obj.trajectory.calc_powered();
+            obj.trajectory = obj.trajectory.calc_passive();
+            tEnd_solve = toc(tStart_solve);
+            fprintf('弹道解算的时间是 %.2f 秒\n\n', tEnd_solve);
+        end
+        
+        function obj = plot(obj)
+            fprintf('正在可视化火箭参数...\n');
+            tStart_visualize = tic;
+            obj.plotter = Plotter(obj);
+            obj.plotter = obj.plotter.plot();
+            tEnd_visualize = toc(tStart_visualize);
+            fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
+        end
         %% 力计算
         % 火箭受到的引力加速度（北天东地坐标系下）
         function g_N = g_N(obj)
