@@ -4,7 +4,8 @@ idx_stage1 = find(t_powered == display.t_stage(1), 1);
 idx_stage2 = find(t_powered == display.t_stage(1) + display.t_stage(2), 1);
 idx_stage3 = find(t_powered == display.t_stage(1) + display.t_stage(2) + display.t_stage(3), 1);
 vec_idx = [idx_stage1, idx_stage2, idx_stage3];
-
+X_powered = X_powered * 0.001;
+X_whole = X_whole * 0.001;
 %% 绘制主动段弹道曲线（发射坐标系下）
 figure (1);
 hold on
@@ -14,9 +15,9 @@ hold off
 view(3);
 axis equal;
 grid on;
-xlabel('z/m');
-ylabel('x/m');
-zlabel('y/m');
+xlabel('z/km');
+ylabel('x/km');
+zlabel('y/km');
 title('发射坐标系下主动段弹道曲线');
 legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
@@ -29,16 +30,16 @@ hold off
 view(3);
 axis equal;
 grid on;
-xlabel('z/m');
-ylabel('x/m');
-zlabel('y/m');
+xlabel('z/km');
+ylabel('x/km');
+zlabel('y/km');
 title('发射坐标系下全弹道曲线');
 legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
 %% 在地球上可视化弹道曲线（地心坐标系下）
 R = X_whole(:,1:3);
 % 所有时刻的地心坐标系下火箭地心矢量
-R_E = Rotation.L2E(display.A_L0, display.theta_T0, display.Phi_T0) * R' + display.R0_e;
+R_E = Rotation.L2E(display.A_L0, display.theta_T0, display.Phi_T0) * R' + display.R0_e*0.001;
 R_E = R_E';
 
 figure(3);
@@ -47,14 +48,19 @@ plot3(R_E(:,1), R_E(:,2), R_E(:,3), 'LineWidth', 3);
 for i = 1:length(vec_idx)
     plot3(R_E(vec_idx(i),1), R_E(vec_idx(i),2), R_E(vec_idx(i),3), '*');
 end
-ellipsoid(0, 0, 0, Earth.a_e, Earth.a_e, Earth.b_e);
+ellipsoid(0, 0, 0, Earth.a_e*0.001, Earth.a_e*0.001, Earth.b_e*0.001);
 hold off
 view(3);
 axis equal
 grid on
+xlabel('z/km');
+ylabel('x/km');
+zlabel('y/km');
 title('地心坐标系下弹道曲线');
 legend('弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
+X_powered = X_powered * 1000;
+X_whole = X_whole * 1000;
 %% 计算火箭主动段各参数数据
 % 计算主动段数据长度
 N_powered = size(t_powered, 1);
@@ -128,7 +134,7 @@ plot(t_powered, v_display);
 plotShutdownPoint(t_powered, v_display, vec_idx);
 hold off
 xlabel('时间/s');
-ylabel('速度/m/s');
+ylabel('速度(m/s)');
 title('速度随时间变化');
 grid on;
 
@@ -244,7 +250,7 @@ plot(t_whole, v_display);
 plotShutdownPoint(t_whole, v_display, vec_idx);
 hold off
 xlabel('时间/s');
-ylabel('速度/m/s');
+ylabel('速度(m/s)');
 title('速度随时间变化');
 grid on;
 
