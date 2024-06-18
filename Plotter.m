@@ -163,7 +163,7 @@ classdef Plotter
             Plotter.plotShutdownPoint(t_powered, obj.v, obj.vec_idx);
             hold off
             xlabel('时间/s');
-            ylabel('速度/m/s');
+            ylabel('速度(m/s)');
             title('速度随时间变化');
             grid on;
             
@@ -251,7 +251,7 @@ classdef Plotter
             Plotter.plotShutdownPoint(t_whole, obj.v, obj.vec_idx);
             hold off
             xlabel('时间/s');
-            ylabel('速度/obj.m/s');
+            ylabel('速度(m/s)');
             title('速度随时间变化');
             grid on;
             
