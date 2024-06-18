@@ -176,7 +176,7 @@ text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%.2fkPa
 plotShutdownPoint(t_powered, q_display, vec_idx);
 hold off
 xlabel('时间/s');
-ylabel('动压/Pa');
+ylabel('动压/kPa');
 title('动压随时间变化');
 grid on;
 
@@ -310,7 +310,7 @@ plot(t_whole, q_display);
 plotShutdownPoint(t_whole, q_display, vec_idx);
 hold off
 xlabel('时间/s');
-ylabel('动压/Pa');
+ylabel('动压/kPa');
 title('动压随时间变化');
 grid on;
 
