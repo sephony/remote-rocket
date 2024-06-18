@@ -59,8 +59,8 @@ classdef Plotter
         end
         
         function obj = plot_trajectoryCurve(obj)
-            X_powered = obj.rocket.trajectory.X_powered;
-            X_whole = obj.rocket.trajectory.X_whole;
+            X_powered = obj.rocket.trajectory.X_powered * 0.001;
+            X_whole = obj.rocket.trajectory.X_whole * 0.001;
             
             %% 绘制主动段弹道曲线（发射坐标系下）
             figure (1);
@@ -71,9 +71,9 @@ classdef Plotter
             view(3);
             axis equal;
             grid on;
-            xlabel('z/obj.m');
-            ylabel('x/obj.m');
-            zlabel('y/obj.m');
+            xlabel('z/km');
+            ylabel('x/km');
+            zlabel('y/km');
             title('发射坐标系下主动段弹道曲线');
             legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关机点');
             
@@ -86,16 +86,16 @@ classdef Plotter
             view(3);
             axis equal;
             grid on;
-            xlabel('z/obj.m');
-            ylabel('x/obj.m');
-            zlabel('y/obj.m');
+            xlabel('z/km');
+            ylabel('x/km');
+            zlabel('y/km');
             title('发射坐标系下全弹道曲线');
             legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
             
             %% 在地球上可视化弹道曲线（地心坐标系下）
             R = X_whole(:,1:3);
             % 所有时刻的地心坐标系下火箭地心矢量
-            R_E = Rotation.L2E(obj.rocket.A_L0, obj.rocket.theta_T0, obj.rocket.Phi_T0) * R' + obj.rocket.R0_e;
+            R_E = Rotation.L2E(obj.rocket.A_L0, obj.rocket.theta_T0, obj.rocket.Phi_T0) * R' + obj.rocket.R0_e*0.001;
             R_E = R_E';
             
             figure(3);
@@ -104,11 +104,14 @@ classdef Plotter
             for i = 1:length(obj.vec_idx)
                 plot3(R_E(obj.vec_idx(i),1), R_E(obj.vec_idx(i),2), R_E(obj.vec_idx(i),3), '*');
             end
-            ellipsoid(0, 0, 0, Earth.a_e, Earth.a_e, Earth.b_e);
+            ellipsoid(0, 0, 0, 0.001*Earth.a_e, 0.001*Earth.a_e, 0.001*Earth.b_e);
             hold off
             view(3);
             axis equal
             grid on
+            xlabel('x/km');
+            ylabel('y/km');
+            zlabel('z/km');
             title('地心坐标系下弹道曲线');
             legend('弹道曲线', '一级关机点', '二级关机点', '三级关机点');
         end
@@ -160,7 +163,7 @@ classdef Plotter
             Plotter.plotShutdownPoint(t_powered, obj.v, obj.vec_idx);
             hold off
             xlabel('时间/s');
-            ylabel('速度/obj.m/s');
+            ylabel('速度/m/s');
             title('速度随时间变化');
             grid on;
             
