@@ -205,7 +205,7 @@ classdef Plotter
             Plotter.plotShutdownPoint(t_powered, obj.q, obj.vec_idx);
             hold off
             xlabel('时间/s');
-            ylabel('动压/Pa');
+            ylabel('动压/kPa');
             title('动压随时间变化');
             grid on;
             
@@ -311,7 +311,7 @@ classdef Plotter
             Plotter.plotShutdownPoint(t_whole, obj.q, obj.vec_idx);
             hold off
             xlabel('时间/s');
-            ylabel('动压/Pa');
+            ylabel('动压/kPa');
             title('动压随时间变化');
             grid on;
             
