@@ -88,6 +88,7 @@ for i = 1:size(t_powered,1)
     theta_L_display(i) = rad2deg(display.theta_L);
     Phi_L_display(i) =  rad2deg(display.Phi_L);
     n_display(i) = display.n;
+    X_display(i,:) = display.X(1:6);
 end
 
 %% 绘制一级飞行时最大攻角、最大动压和最大法向过载
@@ -117,7 +118,7 @@ ylim([-40 90]);  % 设置y轴范围为0-90°
 grid on;
 
 %% 绘制主动段数据
-figure(5);
+figure('Name', '主动段数据');
 subplot(3,3,1);
 hold on
 plot(t_powered, h_display);
@@ -201,6 +202,48 @@ legend('一级关机点', '二级关机点', '三级关机点');
 hold off
 axis off;
 
+
+figure('Name', '主动段数据');
+subplot(2,2,1);
+hold on
+plot(t_powered, 0.001*X_display(:,1));
+plotShutdownPoint(t_powered, 0.001*X_display(:,1), vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('x/km');
+title('x随时间变化');
+grid on;
+
+subplot(2,2,2);
+hold on
+plot(t_powered, 0.001*X_display(:,2));
+plotShutdownPoint(t_powered, 0.001*X_display(:,2), vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('y/km');
+title('y随时间变化');
+grid on;
+
+subplot(2,2,3);
+hold on
+plot(t_powered, X_display(:,4));
+plotShutdownPoint(t_powered, X_display(:,4), vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('v_x(m/s)');
+title('v_x随时间变化');
+grid on;
+
+subplot(2,2,4);
+hold on
+plot(t_powered, X_display(:,5));
+plotShutdownPoint(t_powered, X_display(:,5), vec_idx);
+hold off
+xlabel('时间/s');
+ylabel('v_y(m/s)');
+title('v_y随时间变化');
+grid on;
+
 %% 计算火箭全弹道各参数数据
 % 计算全弹道数据长度
 N_whole = size(t_whole, 1);
@@ -233,7 +276,7 @@ for i = 1:size(t_whole,1)
 end
 
 %% 绘制全弹道数据
-figure(6);
+figure(7);
 subplot(3,3,1);
 hold on
 plot(t_whole, h_display);
