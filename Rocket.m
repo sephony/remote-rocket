@@ -67,7 +67,8 @@ classdef Rocket
             obj.R0_L = Rotation.L2E(A_L0, theta_L0, Phi_L0)' * obj.R0_e;
             
             % 火箭状态量初始化
-            obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
+            % obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
+            obj.X = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
             obj.data = pitch_data;
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
             % 火箭姿态初始化
@@ -132,7 +133,41 @@ classdef Rocket
             R = obj.R_v();
             obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
         end
-        
+        function obj = update_v(obj, t, X)
+            obj.t = t;
+            obj.X = X(:); % 将 X 转换为列向量
+            obj.v = obj.X(1);
+            obj.theta_v = obj.X(2);
+            obj.psi_v = obj.X(3);
+            obj.R_launch = obj.X(4:6);
+            obj.V_launch = [obj.v * cos(obj.theta_v) * cos(obj.psi_v); obj.v * cos(obj.theta_v) * sin(obj.psi_v); obj.v * sin(obj.theta_v)];
+            % 如果到达级间分离时间，更新火箭质量
+            if(obj.t == Rocket.t_stage(1))
+                obj.X(7) = Rocket.m_stage(2);
+            elseif obj.t == Rocket.t_stage(1) + Rocket.t_stage(2)
+                obj.X(7) = Rocket.m_stage(3);
+            end
+            obj.m = obj.X(7);
+            
+            obj.Rc_e = obj.get_Rc_e();
+            obj.Rc_L = obj.get_Rc_L();
+            obj.r = norm(obj.Rc_e);
+            
+            obj.pitch = Rocket.interpolation(t, obj.data);
+            obj.alpha = obj.pitch - obj.theta_v;
+            
+            obj.theta_L = atan2(obj.Rc_e(2), obj.Rc_e(1));
+            obj.Phi_L = asin(obj.Rc_e(3) / obj.r);
+            obj.theta_T = Earth.theta_L2T(obj.theta_L);
+            obj.Phi_T = Earth.Phi_L2T(obj.Phi_L);
+            
+            obj.r_Ue = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(obj.Phi_T))^2 + (1-Earth.e_E)^2 * (cos(obj.Phi_T))^2);
+            obj.h = obj.r - obj.r_Ue;
+            
+            obj.q = Rocket.get_q(obj.h, obj.v);
+            R = obj.R_v();
+            obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
+        end
         %% 力计算
         % 火箭受到的引力加速度（北天东地坐标系下）
         function g_N = g_N(obj)
