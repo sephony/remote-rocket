@@ -140,6 +140,7 @@ classdef Rocket
             obj.theta_v = obj.X(2);
             obj.psi_v = obj.X(3);
             obj.R_launch = obj.X(4:6);
+            obj.V_launch = [obj.v * cos(obj.theta_v) * cos(obj.psi_v); obj.v * cos(obj.theta_v) * sin(obj.psi_v); obj.v * sin(obj.theta_v)];
             % 如果到达级间分离时间，更新火箭质量
             if(obj.t == Rocket.t_stage(1))
                 obj.X(7) = Rocket.m_stage(2);
@@ -151,7 +152,6 @@ classdef Rocket
             obj.Rc_e = obj.get_Rc_e();
             obj.Rc_L = obj.get_Rc_L();
             obj.r = norm(obj.Rc_e);
-            obj.v = norm(obj.V_launch);
             
             obj.pitch = Rocket.interpolation(t, obj.data);
             obj.alpha = obj.pitch - obj.theta_v;

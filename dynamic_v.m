@@ -13,22 +13,27 @@ P_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * P_L;
 Fa_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * Fa_L;
 Fe_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * Fe_L;
 %% 运动学和动力学微分方程组
-v = X(1);
-if v < 1
-    v = 0.1;
+if X(1) <= 1e-3
+    v = 1e-4;
+else
+    v = X(1);
 end
-theta_v = X(2);
+if abs(X(2)-pi/2) <= 1e-3
+    theta_v = pi/2 - 1e-3;
+else
+    theta_v = X(2);
+end
 psi_v = X(3);
 m = X(7);
 
 sin_theta_v = sin(theta_v);
-cos_theta_v = cos(theta_v) + 0.001;
+cos_theta_v = cos(theta_v);
 sin_psi_v = sin(psi_v);
 cos_psi_v = cos(psi_v);
 
 dv = (R(1) + P_v(1) + Fa_v(1) + Fe_v(1)) / m + g_v(1);
 dtheta_v = (R(2) + P_v(2) + Fa_v(2) + Fe_v(2)) / (m * v) + g_v(2) / v;
-if v < 0.001
+if v < 1e-3
     dpsi_v = 0;
 else
     dpsi_v = -(R(3) + P_v(3) + Fa_v(3) + Fe_v(3)) / (m * v * cos_theta_v) - g_v(3) / (v * cos_theta_v);
