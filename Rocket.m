@@ -4,7 +4,7 @@ classdef Rocket
         m_stage = [18800 5400 1300];        % 各级火箭质量
         d_stage = [2.0 2.0 1.0];            % 各级火箭直径
         P_stage = [485000 120000 35000];    % 各级火箭推力
-        Isp_stage = [240 245 255];          % 各级火箭比冲
+        Isp_stage = [300 300 300];          % 各级火箭比冲
         t_stage = [72 71 64];               % 各级工作时间
         
     end
@@ -67,7 +67,7 @@ classdef Rocket
             obj.R0_L = Rotation.L2E(A_L0, theta_L0, Phi_L0)' * obj.R0_e;
             
             % 火箭状态量初始化
-            obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
+            % obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
             obj.X = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
             obj.data = pitch_data;
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];

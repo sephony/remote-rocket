@@ -1,23 +1,38 @@
 function dX = dynamic_v(t, X, rocket)
 %% 状态量更新，计算各种力
-rocket = rocket.update(t, X);
+rocket = rocket.update_v(t, X);
 
-R = rocket.R_v();     % 发射系下气动力
-% D = R(1);
+R = rocket.R_v();       % 速度系下气动力
+g_L = rocket.g_L();     % 发射坐标系下的引力加速度
+P_L = rocket.P_L();     % 推力
+Fa_L = rocket.Fa_L();   % 科氏惯性力
+Fe_L = rocket.Fe_L();   % 牵连惯性力
+
+g_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * g_L;
+P_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * P_L;
+Fa_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * Fa_L;
+Fe_v = Rotation.L2V(rocket.sigma, rocket.psi_v, rocket.theta_v) * Fe_L;
 %% 运动学和动力学微分方程组
 v = X(1);
+if v < 1
+    v = 0.1;
+end
 theta_v = X(2);
 psi_v = X(3);
 m = X(7);
 
 sin_theta_v = sin(theta_v);
-cos_theta_v = cos(theta_v) + 0.1;
+cos_theta_v = cos(theta_v) + 0.001;
 sin_psi_v = sin(psi_v);
 cos_psi_v = cos(psi_v);
 
-dv = R(1)/m - Earth.g_0 * sin_theta_v;
-dtheta_v = - R(2) / (m * v) - Earth.g_0 * cos_theta_v / v;
-dpsi_v = - R(3) / (m * v * cos_theta_v);
+dv = (R(1) + P_v(1) + Fa_v(1) + Fe_v(1)) / m + g_v(1);
+dtheta_v = (R(2) + P_v(2) + Fa_v(2) + Fe_v(2)) / (m * v) + g_v(2) / v;
+if v < 0.001
+    dpsi_v = 0;
+else
+    dpsi_v = -(R(3) + P_v(3) + Fa_v(3) + Fe_v(3)) / (m * v * cos_theta_v) - g_v(3) / (v * cos_theta_v);
+end
 dx = v * cos_theta_v * cos_psi_v;
 dz = -v * cos_theta_v * sin_psi_v;
 dy = v * sin_theta_v;

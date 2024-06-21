@@ -20,14 +20,14 @@ index = 1;                      % 索引变量
 %% 主动段弹道计算
 tStart_powerd = tic;
 for t = 0: step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
-    [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket);
+    [t_t, X_t] = ode45(@dynamic_v, [t; t+step], rocket.X, [], rocket);
     
     num_rows = size(X_t, 1); % 计算 X_t 的行数
     X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
     t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
     index = index + num_rows; % 更新索引变量
     
-    rocket = rocket.update(t+1, X_count(index-1, :));
+    rocket = rocket.update_v(t+1, X_count(index-1, :));
 end
 tEnd_powerd = toc(tStart_powerd);
 fprintf('主动段解算的时间是 %.2f 秒\n', tEnd_powerd);

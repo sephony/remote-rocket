@@ -9,7 +9,8 @@ X_whole = X_whole * 0.001;
 %% 绘制主动段弹道曲线（发射坐标系下）
 figure (1);
 hold on
-plot3(X_powered(:,3),X_powered(:,1),X_powered(:,2));
+% plot3(X_powered(:,3),X_powered(:,1),X_powered(:,2));
+plot3(X_powered(:,6),X_powered(:,4),X_powered(:,5));
 plotShutdownPoint3(X_powered, vec_idx);
 hold off
 view(3);
