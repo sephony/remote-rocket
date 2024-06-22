@@ -54,6 +54,8 @@ classdef Rocket
         
         trajectory;         % 弹道对象
         plotter;            % 可视化对象
+        powered_method;     % 主动段动力学微分方程方法
+        update;             % 更新状态函数
     end
     
     
@@ -68,27 +70,72 @@ classdef Rocket
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
             obj.R0_L = Rotation.L2E(A_L0, theta_L0, Phi_L0)' * obj.R0_e;
-            
-            % 火箭状态量初始化
-            obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
-            obj.data = pitch_data;
+            % 计算火箭各级发动机秒耗量
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
             % 火箭姿态初始化
             obj.yaw = 0;
             obj.roll = 0;
             obj.sigma = 0;
-            % 更新状态
-            obj = obj.update(0, obj.X);
+            % 读取俯仰角飞行程序数据
+            obj.data = pitch_data;
             
-            % 组合类初始化
-            obj.trajectory = Trajectory(obj);   % 创建弹道对象
-            obj.plotter = Plotter(obj);         % 创建可视化对象
             disp('发射点参数:')
             fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
         end
         
+        % 设置火箭主动段的动力学模型并更新状态
+        function obj = set_powered_method(obj, powered_method)
+            obj.powered_method = powered_method;
+            X0_L = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
+            X0_v = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
+            if powered_method == "launch"
+                obj.X = X0_L;
+                obj.update = @(t, X) obj.update_L(t, X);
+                obj = obj.update(0, obj.X);% 更新状态
+                disp('主动段采取发射坐标系弹道微分方程进行解算');
+            elseif powered_method == "velocity"
+                obj.X = X0_v;
+                obj.update = @(t, X) obj.update_v(t, X);
+                obj = obj.update(0, obj.X);% 更新状态
+                disp('主动段采取速度坐标系弹道微分方程进行解算');
+            else
+                obj.powered_method = "error";
+                error('火箭动力学微分方程方法错误, 请选择正确的动力学微分方程方法！(launch or velocity)');
+            end
+        end
+        
+        function obj = choose_method(obj, dynamic_type)
+            if dynamic_type == "launch"
+                obj.update = @(t, X) obj.update_L(t, X);
+            elseif dynamic_type == "velocity"
+                obj.update = @(t, X) obj.update_v(t, X);
+            else
+                error('火箭动力学微分方程方法错误, 请选择正确的动力学微分方程方法！(launch or velocity)');
+            end
+        end
+        
+        function obj = solve(obj)
+            obj.trajectory = Trajectory(obj);   % 创建弹道对象
+            tStart_powered = tic;
+            obj.trajectory = obj.trajectory.calc_powered(obj.powered_method);
+            tEnd_powered = toc(tStart_powered);
+            fprintf('主动段弹道解算的时间是 %.2f 秒\n\n', tEnd_powered);
+            tStart_passive = tic;
+            obj.trajectory = obj.trajectory.calc_passive("launch");
+            tEnd_passive = toc(tStart_passive);
+            fprintf('被动段弹道解算的时间是 %.2f 秒\n', tEnd_passive);
+            obj.trajectory = obj.trajectory.merge_data();
+        end
+        
+        function obj = plot(obj)
+            obj.plotter = Plotter(obj);
+            obj.plotter = obj.plotter.plot_trajectoryCurve();
+            obj.plotter = obj.plotter.plot_poweredData();
+            obj.plotter = obj.plotter.plot_wholeData();
+        end
+        
         %% 更新状态(根据变化后的X更新状态量)
-        function obj = update(obj, t, X)
+        function obj = update_L(obj, t, X)
             obj.t = t;
             obj.X = X(:); % 将 X 转换为列向量
             obj.R_launch = obj.X(1:3);
@@ -140,25 +187,46 @@ classdef Rocket
             obj.q = Rocket.get_q(obj.h, obj.v);
             R = obj.R_v();
             obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
+            obj.update = @(t, X) obj.update_L(t, X);
         end
         
-        function obj = solve(obj)
-            tStart_powered = tic;
-            obj.trajectory = obj.trajectory.calc_powered("launch");
-            tEnd_powered = toc(tStart_powered);
-            fprintf('主动段弹道解算的时间是 %.2f 秒\n\n', tEnd_powered);
-            tStart_passive = tic;
-            obj.trajectory = obj.trajectory.calc_passive("launch");
-            tEnd_passive = toc(tStart_passive);
-            fprintf('被动段弹道解算的时间是 %.2f 秒\n', tEnd_passive);
+        function obj = update_v(obj, t, X)
+            obj.t = t;
+            obj.X = X(:); % 将 X 转换为列向量
+            obj.v = obj.X(1);
+            obj.theta_v = obj.X(2);
+            obj.psi_v = obj.X(3);
+            obj.R_launch = obj.X(4:6);
+            obj.V_launch = [obj.v * cos(obj.theta_v) * cos(obj.psi_v); obj.v * sin(obj.theta_v); -obj.v * cos(obj.theta_v) * sin(obj.psi_v)];
+            % 如果到达级间分离时间，更新火箭质量
+            if(obj.t == Rocket.t_stage(1))
+                obj.X(7) = Rocket.m_stage(2);
+            elseif obj.t == Rocket.t_stage(1) + Rocket.t_stage(2)
+                obj.X(7) = Rocket.m_stage(3);
+            end
+            obj.m = obj.X(7);
+            
+            obj.Rc_e = obj.get_Rc_e();
+            obj.Rc_L = obj.get_Rc_L();
+            obj.r = norm(obj.Rc_e);
+            
+            obj.pitch = Rocket.interpolation(t, obj.data);
+            obj.alpha = obj.pitch - obj.theta_v;
+            
+            obj.theta_L = atan2(obj.Rc_e(2), obj.Rc_e(1));
+            obj.Phi_L = asin(obj.Rc_e(3) / obj.r);
+            obj.theta_T = Earth.theta_L2T(obj.theta_L);
+            obj.Phi_T = Earth.Phi_L2T(obj.Phi_L);
+            
+            obj.r_Ue = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(obj.Phi_T))^2 + (1-Earth.e_E)^2 * (cos(obj.Phi_T))^2);
+            obj.h = obj.r - obj.r_Ue;
+            
+            obj.q = Rocket.get_q(obj.h, obj.v);
+            R = obj.R_v();
+            obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
+            obj.update = @(t, X) obj.update_v(t, X);
         end
         
-        function obj = plot(obj)
-            obj.plotter = Plotter(obj);
-            obj.plotter = obj.plotter.plot_trajectoryCurve();
-            obj.plotter = obj.plotter.plot_poweredData();
-            obj.plotter = obj.plotter.plot_wholeData();
-        end
         %% 力计算
         % 火箭受到的引力加速度（北天东地坐标系下）
         function g_N = g_N(obj)

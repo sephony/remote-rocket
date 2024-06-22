@@ -1,7 +1,10 @@
 classdef Plotter
     properties
         rocket;     % 火箭对象
+        trajectory; % 弹道对象
+        
         vec_idx;    % 各级关机点时间对应的索引
+        
         h;          % 高度
         v;          % 速度
         theta_L;    % 地理经度
@@ -19,10 +22,11 @@ classdef Plotter
         %% 构造函数
         function obj = Plotter(rocket)
             obj.rocket = rocket;
+            obj.trajectory = rocket.trajectory;
+            t_powered = obj.trajectory.t_powered;
+            X_whole = obj.trajectory.X_whole;
+            t_whole = obj.trajectory.t_whole;
             % 获取各级关机点时间对应的索引
-            t_powered = obj.rocket.trajectory.t_powered;
-            X_whole = obj.rocket.trajectory.X_whole;
-            t_whole = obj.rocket.trajectory.t_whole;
             idx_stage1 = find(t_powered == obj.rocket.t_stage(1), 1);
             idx_stage2 = find(t_powered == obj.rocket.t_stage(1) + obj.rocket.t_stage(2), 1);
             idx_stage3 = find(t_powered == obj.rocket.t_stage(1) + obj.rocket.t_stage(2) + obj.rocket.t_stage(3), 1);
@@ -41,9 +45,9 @@ classdef Plotter
             obj.theta_v = zeros(N_whole, 1);
             obj.pitch = zeros(N_whole, 1);
             obj.psi_v = zeros(N_whole, 1);
-            % 计算火箭全弹道各参数数据
+            % 在发射系下计算火箭全弹道各参数数据
             for i = 1:size(t_whole,1)
-                obj.rocket = obj.rocket.update(t_whole(i), X_whole(i,:));
+                obj.rocket = obj.rocket.update_L(t_whole(i), X_whole(i,:));
                 obj.pitch(i) = rad2deg(obj.rocket.pitch);
                 obj.theta_v(i) = rad2deg(obj.rocket.theta_v);
                 obj.psi_v(i) = rad2deg(obj.rocket.psi_v);
@@ -59,8 +63,8 @@ classdef Plotter
         end
         
         function obj = plot_trajectoryCurve(obj)
-            X_powered = obj.rocket.trajectory.X_powered * 0.001;
-            X_whole = obj.rocket.trajectory.X_whole * 0.001;
+            X_powered = obj.trajectory.X_powered * 0.001;
+            X_whole = obj.trajectory.X_whole * 0.001;
             
             %% 绘制主动段弹道曲线（发射坐标系下）
             figure (1);
@@ -117,7 +121,7 @@ classdef Plotter
         end
         
         function obj = plot_poweredData(obj)
-            t_powered = obj.rocket.trajectory.t_powered;
+            t_powered = obj.trajectory.t_powered;
             idx_stage1 = find(t_powered == obj.rocket.t_stage(1), 1);
             %% 绘制一级飞行时最大攻角、最大动压和最大法向过载
             % 计算一级飞行最大攻角、最大动压和最大法向过载
@@ -231,7 +235,7 @@ classdef Plotter
             axis off;
         end
         function obj = plot_wholeData(obj)
-            t_whole = obj.rocket.trajectory.t_whole;
+            t_whole = obj.trajectory.t_whole;
             
             %% 绘制全弹道数据
             figure(6);
