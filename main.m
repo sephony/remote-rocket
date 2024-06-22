@@ -38,6 +38,8 @@ t_powered = t_count(1:index-1);
 
 %% 被动段弹道计算
 tStart_passive = tic;
+index = 1; % 重置索引变量
+rocket.X = [rocket.R_launch; rocket.V_launch; rocket.m]; % 重置初始状态
 for t = (rocket.t_stage(1) + rocket.t_stage(2) + rocket.t_stage(3)) : step : 100000
     [t_t, X_t] = ode45(@dynamic, [t, t + step], rocket.X, [], rocket);
     
@@ -60,8 +62,16 @@ tEnd_passive = toc(tStart_passive);
 fprintf('被动段解算的时间是 %.2f 秒\n', tEnd_passive);
 
 % 截取全弹道数据
-X_whole = X_count(1:index-1, :);
-t_whole = t_count(1:index-1);
+% X_whole = X_count(1:index-1, :);
+% t_whole = t_count(1:index-1);
+% 截取被动段数据
+X_passive = X_count(1:index-1, :);
+t_passive = t_count(1:index-1);
+
+X_powered = poweredData_v2L(rocket, X_powered, t_powered); % 转换主动段数据
+% 拼接主动段和被动段数据
+X_whole = [X_powered; X_passive];
+t_whole = [t_powered; t_passive];
 % 释放内存
 clear X_count t_count;
 
@@ -72,3 +82,13 @@ visualizeRocketData(display, X_powered, t_powered, X_whole, t_whole);
 tEnd_visualize = toc(tStart_visualize);
 fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
 toc;
+
+function X = poweredData_v2L(rocket, X_powered, t_powered)
+% 计算主动段数据长度
+N_powered = size(t_powered, 1);
+X = zeros(N_powered, 7);
+for i = 1:size(t_powered,1)
+    rocket = rocket.update_v(t_powered(i), X_powered(i,:));
+    X(i,:) = [rocket.R_launch', rocket.V_launch', rocket.m];
+end
+end
