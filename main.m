@@ -8,7 +8,9 @@ Phi_L0 = deg2rad(-30);    %（北纬为正，南纬为负）
 pitch_data = load('data/FiC.txt');   % 读取俯仰角飞行程序数据
 % 创建火箭对象
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);
-
+% 设置火箭主动段的动力学模型
+% rocket = rocket.set_powered_method("launch");
+rocket = rocket.set_powered_method("velocity");
 %% 弹道计算
 fprintf('正在解算弹道...\n');
 tStart_solve = tic;
