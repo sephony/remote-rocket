@@ -4,13 +4,49 @@ idx_stage1 = find(t_powered == display.t_stage(1), 1);
 idx_stage2 = find(t_powered == display.t_stage(1) + display.t_stage(2), 1);
 idx_stage3 = find(t_powered == display.t_stage(1) + display.t_stage(2) + display.t_stage(3), 1);
 vec_idx = [idx_stage1, idx_stage2, idx_stage3];
+
+n_powered = size(t_powered, 1);
+
+%% 计算火箭全弹道各参数数据
+% 计算全弹道数据长度
+N_whole = size(t_whole, 1);
+h = zeros(N_whole, 1);
+v = zeros(N_whole, 1);
+theta_v = zeros(N_whole, 1);
+psi_v = zeros(N_whole, 1);
+q = zeros(N_whole, 1);
+n = zeros(N_whole, 1);
+alpha = zeros(N_whole, 1);
+pitch = zeros(N_whole, 1);
+m = zeros(N_whole, 1);
+theta_L = zeros(N_whole, 1);
+Phi_L = zeros(N_whole, 1);
+X = zeros(N_whole, 6);
+
+% 将全弹道数据赋值给 display
+for i = 1:size(t_whole,1)
+    display = display.update(t_whole(i), X_whole(i,:));
+    pitch(i) = rad2deg(display.pitch);
+    theta_v(i) = rad2deg(display.theta_v);
+    psi_v(i) = rad2deg(display.psi_v);
+    alpha(i) = rad2deg(display.alpha);
+    h(i) = display.h * 0.001;
+    v(i) = display.v;
+    m(i) = display.m;
+    q(i) = display.q * 0.001;
+    theta_L(i) = rad2deg(display.theta_L);
+    Phi_L(i) =  rad2deg(display.Phi_L);
+    n(i) = display.n;
+    X(i,:) = display.X(1:6);
+end
+
 X_powered = X_powered * 0.001;
 X_whole = X_whole * 0.001;
+
 %% 绘制主动段弹道曲线（发射坐标系下）
 figure (1);
 hold on
 plot3(X_powered(:,3),X_powered(:,1),X_powered(:,2));
-% plot3(X_powered(:,6),X_powered(:,4),X_powered(:,5));
 plotShutdownPoint3(X_powered, vec_idx);
 hold off
 view(3);
@@ -60,43 +96,14 @@ zlabel('y/km');
 title('地心坐标系下弹道曲线');
 legend('弹道曲线', '一级关机点', '二级关机点', '三级关机点');
 
-X_powered = X_powered * 1000;
-X_whole = X_whole * 1000;
 %% 计算火箭主动段各参数数据
-% 计算主动段数据长度
-N_powered = size(t_powered, 1);
-h_display = zeros(N_powered, 1);
-v_display = zeros(N_powered, 1);
-theta_v_display = zeros(N_powered, 1);
-q_display = zeros(N_powered, 1);
-n_display = zeros(N_powered, 1);
-alpha_display = zeros(N_powered, 1);
-pitch_display = zeros(N_powered, 1);
-m_display = zeros(N_powered, 1);
-theta_L_display = zeros(N_powered, 1);
-Phi_L_display = zeros(N_powered, 1);
 
-% 将主动段数据赋值给 display
-for i = 1:size(t_powered,1)
-    display = display.update(t_powered(i), X_powered(i,:));
-    pitch_display(i) = rad2deg(display.pitch);
-    theta_v_display(i) = rad2deg(display.theta_v);
-    alpha_display(i) = rad2deg(display.alpha);
-    h_display(i) = display.h * 0.001;
-    v_display(i) = display.v;
-    m_display(i) = display.m;
-    q_display(i) = display.q * 0.001;
-    theta_L_display(i) = rad2deg(display.theta_L);
-    Phi_L_display(i) =  rad2deg(display.Phi_L);
-    n_display(i) = display.n;
-    X_display(i,:) = display.X(1:6);
-end
 
 %% 绘制一级飞行时最大攻角、最大动压和最大法向过载
 % 计算一级飞行最大攻角、最大动压和最大法向过载
-[max_alpha, idx_max_alpha] = min(alpha_display(1:idx_stage1));
-[max_q, idx_max_q] = max(q_display(1:idx_stage1));
-[max_n, idx_max_n] = max(n_display(1:idx_stage1));
+[max_alpha, idx_max_alpha] = min(alpha(1:idx_stage1));
+[max_q, idx_max_q] = max(q(1:idx_stage1));
+[max_n, idx_max_n] = max(n(1:idx_stage1));
 
 % 打印到终端
 fprintf('一级飞行时最大攻角: %.2f° 在时间: %.2fs\n', max_alpha, t_powered(idx_max_alpha));
@@ -105,9 +112,9 @@ fprintf('一级飞行时最大法向过载: %.2fg 在时间: %.2fs\n\n', max_n, 
 
 figure(4);
 hold on
-plot(t_powered, alpha_display, 'r');    % 绘制攻角
-plot(t_powered, pitch_display, 'g');    % 绘制俯仰角
-plot(t_powered, theta_v_display, 'b');  % 绘制弹道倾角
+plot(t_powered, alpha(1: n_powered), 'r');    % 绘制攻角
+plot(t_powered, pitch(1: n_powered), 'g');    % 绘制俯仰角
+plot(t_powered, theta_v(1: n_powered), 'b');  % 绘制弹道倾角
 plot(t_powered(idx_max_alpha), max_alpha, 'o','MarkerFaceColor','k','HandleVisibility','off');
 text(t_powered(idx_max_alpha), max_alpha, sprintf('一级飞行时最大攻角:\n%.2f°', max_alpha));
 hold off
@@ -122,8 +129,8 @@ grid on;
 figure('Name', '主动段数据');
 subplot(3,3,1);
 hold on
-plot(t_powered, h_display);
-plotShutdownPoint(t_powered, h_display, vec_idx);
+plot(t_powered, h(1: n_powered));
+plotShutdownPoint(t_powered, h(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('高度/km');
@@ -132,8 +139,8 @@ grid on;
 
 subplot(3,3,2);
 hold on
-plot(t_powered, v_display);
-plotShutdownPoint(t_powered, v_display, vec_idx);
+plot(t_powered, v(1: n_powered));
+plotShutdownPoint(t_powered, v(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('速度(m/s)');
@@ -142,8 +149,8 @@ grid on;
 
 subplot(3,3,4);
 hold on
-plot(t_powered, theta_L_display);
-plotShutdownPoint(t_powered, theta_L_display, vec_idx);
+plot(t_powered, theta_L(1: n_powered));
+plotShutdownPoint(t_powered, theta_L(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('地理经度/°');
@@ -152,8 +159,8 @@ grid on;
 
 subplot(3,3,5);
 hold on
-plot(t_powered, Phi_L_display);
-plotShutdownPoint(t_powered, Phi_L_display, vec_idx);
+plot(t_powered, Phi_L(1: n_powered));
+plotShutdownPoint(t_powered, Phi_L(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('地理纬度/°');
@@ -162,8 +169,8 @@ grid on;
 
 subplot(3,3,7);
 hold on
-plot(t_powered, m_display);
-plotShutdownPoint(t_powered, m_display, vec_idx);
+plot(t_powered, m(1: n_powered));
+plotShutdownPoint(t_powered, m(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('质量/kg');
@@ -172,10 +179,10 @@ grid on;
 
 subplot(3,3,8);
 hold on
-plot(t_powered, q_display);
+plot(t_powered, q(1: n_powered));
 plot(t_powered(idx_max_q), max_q, 'o','MarkerFaceColor','k','HandleVisibility','off');
 text(t_powered(idx_max_q), max_q, sprintf('一级飞行时最大动压:\n%.2fkPa', max_q));
-plotShutdownPoint(t_powered, q_display, vec_idx);
+plotShutdownPoint(t_powered, q(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('动压/kPa');
@@ -184,10 +191,10 @@ grid on;
 
 subplot(3,3,9);
 hold on
-plot(t_powered, n_display);
+plot(t_powered, n(1: n_powered));
 plot(t_powered(idx_max_n), max_n, 'o','MarkerFaceColor','k','HandleVisibility','off');
 text(t_powered(idx_max_n), max_n, sprintf('一级飞行时最大法向过载:\n%.2fg', max_n));
-plotShutdownPoint(t_powered, n_display, vec_idx);
+plotShutdownPoint(t_powered, n(1: n_powered), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('过载/g');
@@ -207,8 +214,8 @@ axis off;
 figure('Name', '主动段数据');
 subplot(2,2,1);
 hold on
-plot(t_powered, 0.001*X_display(:,1));
-plotShutdownPoint(t_powered, 0.001*X_display(:,1), vec_idx);
+plot(t_powered, 0.001*X((1: n_powered),1));
+plotShutdownPoint(t_powered, 0.001*X((1: n_powered),1), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('x/km');
@@ -217,8 +224,8 @@ grid on;
 
 subplot(2,2,2);
 hold on
-plot(t_powered, 0.001*X_display(:,2));
-plotShutdownPoint(t_powered, 0.001*X_display(:,2), vec_idx);
+plot(t_powered, 0.001*X((1: n_powered),2));
+plotShutdownPoint(t_powered, 0.001*X((1: n_powered),2), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('y/km');
@@ -227,8 +234,8 @@ grid on;
 
 subplot(2,2,3);
 hold on
-plot(t_powered, X_display(:,4));
-plotShutdownPoint(t_powered, X_display(:,4), vec_idx);
+plot(t_powered, X((1: n_powered),4));
+plotShutdownPoint(t_powered, X((1: n_powered),4), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('v_x(m/s)');
@@ -237,51 +244,21 @@ grid on;
 
 subplot(2,2,4);
 hold on
-plot(t_powered, X_display(:,5));
-plotShutdownPoint(t_powered, X_display(:,5), vec_idx);
+plot(t_powered, X((1: n_powered),5));
+plotShutdownPoint(t_powered, X((1: n_powered),5), vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('v_y(m/s)');
 title('v_y随时间变化');
 grid on;
 
-%% 计算火箭全弹道各参数数据
-% 计算全弹道数据长度
-N_whole = size(t_whole, 1);
-h_display = zeros(N_whole, 1);
-v_display = zeros(N_whole, 1);
-theta_v_display = zeros(N_whole, 1);
-psi_v_display = zeros(N_whole, 1);
-q_display = zeros(N_whole, 1);
-n_display = zeros(N_whole, 1);
-alpha_display = zeros(N_whole, 1);
-pitch_display = zeros(N_whole, 1);
-m_display = zeros(N_whole, 1);
-theta_L_display = zeros(N_whole, 1);
-Phi_L_display = zeros(N_whole, 1);
-
-% 将全弹道数据赋值给 display
-for i = 1:size(t_whole,1)
-    display = display.update(t_whole(i), X_whole(i,:));
-    pitch_display(i) = rad2deg(display.pitch);
-    theta_v_display(i) = rad2deg(display.theta_v);
-    psi_v_display(i) = rad2deg(display.psi_v);
-    alpha_display(i) = rad2deg(display.alpha);
-    h_display(i) = display.h * 0.001;
-    v_display(i) = display.v;
-    m_display(i) = display.m;
-    q_display(i) = display.q * 0.001;
-    theta_L_display(i) = rad2deg(display.theta_L);
-    Phi_L_display(i) =  rad2deg(display.Phi_L);
-    n_display(i) = display.n;
-end
 
 %% 绘制全弹道数据
 figure(7);
 subplot(3,3,1);
 hold on
-plot(t_whole, h_display);
-plotShutdownPoint(t_whole, h_display, vec_idx);
+plot(t_whole, h);
+plotShutdownPoint(t_whole, h, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('高度/km');
@@ -290,8 +267,8 @@ grid on;
 
 subplot(3,3,2);
 hold on
-plot(t_whole, v_display);
-plotShutdownPoint(t_whole, v_display, vec_idx);
+plot(t_whole, v);
+plotShutdownPoint(t_whole, v, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('速度(m/s)');
@@ -300,8 +277,8 @@ grid on;
 
 subplot(3,3,4);
 hold on
-plot(t_whole, theta_L_display);
-plotShutdownPoint(t_whole, theta_L_display, vec_idx);
+plot(t_whole, theta_L);
+plotShutdownPoint(t_whole, theta_L, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('地理经度/°');
@@ -310,8 +287,8 @@ grid on;
 
 subplot(3,3,5);
 hold on
-plot(t_whole, Phi_L_display);
-plotShutdownPoint(t_whole, Phi_L_display, vec_idx);
+plot(t_whole, Phi_L);
+plotShutdownPoint(t_whole, Phi_L, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('地理纬度/°');
@@ -320,8 +297,8 @@ grid on;
 
 subplot(3,3,6);
 hold on
-plot(t_whole, theta_v_display);
-plotShutdownPoint(t_whole, theta_v_display, vec_idx);
+plot(t_whole, theta_v);
+plotShutdownPoint(t_whole, theta_v, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('弹道倾角/°');
@@ -330,8 +307,8 @@ grid on;
 
 % subplot(3,3,6);
 % hold on
-% plot(t_whole, psi_v_display);
-% plotShutdownPoint(t_whole, psi_v_display, vec_idx);
+% plot(t_whole, psi_v);
+% plotShutdownPoint(t_whole, psi_v, vec_idx);
 % hold off
 % xlabel('时间/s');
 % ylabel('弹道偏角/°');
@@ -340,8 +317,8 @@ grid on;
 
 subplot(3,3,7);
 hold on
-plot(t_whole, m_display);
-plotShutdownPoint(t_whole, m_display, vec_idx);
+plot(t_whole, m);
+plotShutdownPoint(t_whole, m, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('质量/kg');
@@ -350,8 +327,8 @@ grid on;
 
 subplot(3,3,8);
 hold on
-plot(t_whole, q_display);
-plotShutdownPoint(t_whole, q_display, vec_idx);
+plot(t_whole, q);
+plotShutdownPoint(t_whole, q, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('动压/kPa');
@@ -360,8 +337,8 @@ grid on;
 
 subplot(3,3,9);
 hold on
-plot(t_whole, n_display);
-plotShutdownPoint(t_whole, n_display, vec_idx);
+plot(t_whole, n);
+plotShutdownPoint(t_whole, n, vec_idx);
 hold off
 xlabel('时间/s');
 ylabel('过载/g');
@@ -389,3 +366,4 @@ plot3(X(indexs(1),3), X(indexs(1),1), X(indexs(1),2), '*', 'Color', 'r');
 plot3(X(indexs(2),3), X(indexs(2),1), X(indexs(2),2), '*', 'Color', 'g');
 plot3(X(indexs(3),3), X(indexs(3),1), X(indexs(3),2), '*', 'Color', 'b');
 end
+

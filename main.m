@@ -7,6 +7,8 @@ Phi_L0 = deg2rad(-30);    %（北纬为正，南纬为负）
 
 pitch_data = load('data/FiC.txt');   % 读取俯仰角飞行程序数据
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);    % 创建火箭对象
+% powered_method = "速度系";  %主动段解算方法，"速度系" 或 "发射系"
+powered_method = "发射系";
 disp('发射点参数:')
 fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
 
@@ -19,15 +21,29 @@ index = 1;                      % 索引变量
 
 %% 主动段弹道计算
 tStart_powerd = tic;
-for t = 0: step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
-    [t_t, X_t] = ode45(@dynamic_v, [t; t+step], rocket.X, [], rocket);
-    
-    num_rows = size(X_t, 1); % 计算 X_t 的行数
-    X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
-    t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
-    index = index + num_rows; % 更新索引变量
-    
-    rocket = rocket.update_v(t+1, X_count(index-1, :));
+if powered_method == "发射系"
+    for t = 0: step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
+        [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket);
+        
+        num_rows = size(X_t, 1); % 计算 X_t 的行数
+        X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
+        t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
+        index = index + num_rows; % 更新索引变量
+        
+        rocket = rocket.update(t+1, X_count(index-1, :));
+    end
+else
+    rocket.X = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
+    for t = 0: step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
+        [t_t, X_t] = ode45(@dynamic_v, [t; t+step], rocket.X, [], rocket);
+        
+        num_rows = size(X_t, 1); % 计算 X_t 的行数
+        X_count(index:(index+num_rows-1), :) = X_t; % 将 X_t 的数据插入到 X_count 中
+        t_count(index:(index+num_rows-1)) = t_t; % 将 t_t 的数据插入到 t_count 中
+        index = index + num_rows; % 更新索引变量
+        
+        rocket = rocket.update_v(t+1, X_count(index-1, :));
+    end
 end
 tEnd_powerd = toc(tStart_powerd);
 fprintf('主动段解算的时间是 %.2f 秒\n', tEnd_powerd);
@@ -61,14 +77,12 @@ end
 tEnd_passive = toc(tStart_passive);
 fprintf('被动段解算的时间是 %.2f 秒\n', tEnd_passive);
 
-% 截取全弹道数据
-% X_whole = X_count(1:index-1, :);
-% t_whole = t_count(1:index-1);
 % 截取被动段数据
 X_passive = X_count(1:index-1, :);
 t_passive = t_count(1:index-1);
-
-X_powered = poweredData_v2L(rocket, X_powered, t_powered); % 转换主动段数据
+if powered_method == "速度系"
+    X_powered = rocket.data_v2L(X_powered, t_powered); % 转换主动段数据
+end
 % 拼接主动段和被动段数据
 X_whole = [X_powered; X_passive];
 t_whole = [t_powered; t_passive];
@@ -82,13 +96,3 @@ visualizeRocketData(display, X_powered, t_powered, X_whole, t_whole);
 tEnd_visualize = toc(tStart_visualize);
 fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
 toc;
-
-function X = poweredData_v2L(rocket, X_powered, t_powered)
-% 计算主动段数据长度
-N_powered = size(t_powered, 1);
-X = zeros(N_powered, 7);
-for i = 1:size(t_powered,1)
-    rocket = rocket.update_v(t_powered(i), X_powered(i,:));
-    X(i,:) = [rocket.R_launch', rocket.V_launch', rocket.m];
-end
-end

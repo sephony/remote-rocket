@@ -67,8 +67,7 @@ classdef Rocket
             obj.R0_L = Rotation.L2E(A_L0, theta_L0, Phi_L0)' * obj.R0_e;
             
             % 火箭状态量初始化
-            % obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
-            obj.X = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
+            obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
             obj.data = pitch_data;
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
             % 火箭姿态初始化
@@ -167,6 +166,16 @@ classdef Rocket
             obj.q = Rocket.get_q(obj.h, obj.v);
             R = obj.R_v();
             obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
+        end
+        
+        function X = data_v2L(obj, X_powered, t_powered)
+            % 计算主动段数据长度
+            N_powered = size(t_powered, 1);
+            X = zeros(N_powered, 7);
+            for i = 1:size(t_powered,1)
+                obj = obj.update_v(t_powered(i), X_powered(i,:));
+                X(i,:) = [obj.R_launch', obj.V_launch', obj.m];
+            end
         end
         %% 力计算
         % 火箭受到的引力加速度（北天东地坐标系下）
