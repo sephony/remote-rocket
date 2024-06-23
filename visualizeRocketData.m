@@ -305,24 +305,14 @@ ylabel('弹道倾角/°');
 title('弹道倾角随时间变化');
 grid on;
 
-% subplot(3,3,6);
-% hold on
-% plot(t_whole, psi_v);
-% plotShutdownPoint(t_whole, psi_v, vec_idx);
-% hold off
-% xlabel('时间/s');
-% ylabel('弹道偏角/°');
-% title('弹道倾角随时间变化');
-% grid on;
-
 subplot(3,3,7);
 hold on
-plot(t_whole, m);
-plotShutdownPoint(t_whole, m, vec_idx);
+plot(t_whole, psi_v);
+plotShutdownPoint(t_whole, psi_v, vec_idx);
 hold off
 xlabel('时间/s');
-ylabel('质量/kg');
-title('质量随时间变化');
+ylabel('弹道偏角/°');
+title('弹道偏角随时间变化');
 grid on;
 
 subplot(3,3,8);
