@@ -87,48 +87,61 @@ classdef Rocket
             % 读取俯仰角飞行程序数据
             obj.data = load(obj.path);
             absolutePath = fullfile(pwd, obj.path);
-            
-            p = inputParser;                        % 创建一个输入解析器
-            addOptional(p, 'print_flag', 'print');  % 定义期望的参数
-            parse(p, varargin{:});                  % 解析输入参数
-            print_flag = p.Results.print_flag;      % 提取参数值
-            if print_flag == "print"
-                fprintf('火箭发射点参数：\n');
-                fprintf('---------------------------------------------------------\n');
-                fprintf('发射点地理方位角\t %.2f°\n', A_L0);
-                fprintf('发射点地理经度\t\t %.2f°\n', theta_L0);
-                fprintf('发射点地理纬度\t\t %.2f°\n', Phi_L0);
-                fprintf('发射点天文经度\t\t %.2f°\n', rad2deg(obj.theta_T0));
-                fprintf('发射点天文纬度\t\t %.2f°\n', rad2deg(obj.Phi_T0));
-                fprintf('发射点地心距离\t\t %.2f km\n', obj.r0 / 1e3);
-                fprintf('发射点地心矢径\t\t [%.2f, %.2f, %.2f] km\n', obj.R0_e / 1e3);
-                fprintf('各级发动机秒耗量\t [%.2f, %.2f, %.2f] kg/s\n', obj.dm);
-                fprintf('俯仰角数据路径\t\t %s\n', absolutePath);
-                fprintf('---------------------------------------------------------\n');
-            elseif print_flag == "no_print"
-            else
-                error('print_flag 参数错误, 请选择正确的参数！(print or no_print)');
+            % 创建一个输入解析器
+            p = inputParser;
+            % 定义期望的参数
+            addOptional(p, 'print_flag', true);
+            addOptional(p, 'powered_method', 'launch');
+            % 解析输入参数
+            parse(p, varargin{:});
+            % 提取参数值
+            print_flag = p.Results.print_flag;
+            obj.powered_method = p.Results.powered_method;
+            if print_flag == true
+                fprintf('-------------------------------------------------------------\n');
+                fprintf('                 ** 火箭发射点及其他参数 **\n');
+                fprintf('-------------------------------------------------------------\n');
+                fprintf('\t发射点地理方位角\t\t\t %.2f°\n', A_L0);
+                fprintf('\t发射点地理经度\t\t\t\t %.2f°\n', theta_L0);
+                fprintf('\t发射点地理纬度\t\t\t\t %.2f°\n', Phi_L0);
+                fprintf('\t发射点天文经度\t\t\t\t %.2f°\n', rad2deg(obj.theta_T0));
+                fprintf('\t发射点天文纬度\t\t\t\t %.2f°\n', rad2deg(obj.Phi_T0));
+                fprintf('\t发射点地心距离\t\t\t\t %.2f km\n', obj.r0 / 1e3);
+                fprintf('\t发射点地心矢径\t\t\t\t [%.2f, %.2f, %.2f] km\n', obj.R0_e / 1e3);
+                fprintf('-------------------------------------------------------------\n');
+                fprintf('\t各级发动机秒耗量\t\t\t [%.2f, %.2f, %.2f] kg/s\n', obj.dm);
+                fprintf('\t俯仰角数据路径\t\t\t\t %s\n', absolutePath);
             end
+            obj = obj.set_powered_method(obj.powered_method, 'print_flag', false);
         end
         
         % 设置火箭主动段的动力学模型并更新状态
-        function obj = set_powered_method(obj, powered_method)
+        function obj = set_powered_method(obj, powered_method, varargin)
             obj.powered_method = powered_method;
             X0_L = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
             X0_v = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
             if powered_method == "launch"
                 obj.X = X0_L;
                 obj.update = @(t, X) obj.update_L(t, X);
-                obj = obj.update(0, obj.X);% 更新状态
-                disp('主动段采取发射坐标系弹道微分方程进行解算');
             elseif powered_method == "velocity"
                 obj.X = X0_v;
                 obj.update = @(t, X) obj.update_v(t, X);
-                obj = obj.update(0, obj.X);% 更新状态
-                disp('主动段采取速度坐标系弹道微分方程进行解算');
             else
                 obj.powered_method = "error";
                 error('火箭动力学微分方程方法错误, 请选择正确的动力学微分方程方法！(launch or velocity)');
+            end
+            obj = obj.update(0, obj.X);% 更新状态
+            % 创建一个输入解析器
+            p = inputParser;
+            % 定义期望的参数
+            addOptional(p, 'print_flag', true);
+            % 解析输入参数
+            parse(p, varargin{:});
+            % 提取参数值
+            print_flag = p.Results.print_flag;
+            if print_flag == true
+                fprintf('\t主动段动力学微分方程方法\t\t %s\n', obj.powered_method);
+                fprintf('-------------------------------------------------------------\n');
             end
         end
         
@@ -143,23 +156,37 @@ classdef Rocket
         end
         
         function obj = solve(obj)
+            fprintf('* 正在解算弹道...\n');
+            tStart_solve = tic;
             obj.trajectory = Trajectory(obj);   % 创建弹道对象
             tStart_powered = tic;
             obj.trajectory = obj.trajectory.calc_powered(obj.powered_method);
             tEnd_powered = toc(tStart_powered);
-            fprintf('主动段弹道解算的时间是 %.2f 秒\n\n', tEnd_powered);
+            fprintf('  主动段弹道解算的时间是 %.2f 秒\n', tEnd_powered);
             tStart_passive = tic;
             obj.trajectory = obj.trajectory.calc_passive("launch");
             tEnd_passive = toc(tStart_passive);
-            fprintf('被动段弹道解算的时间是 %.2f 秒\n', tEnd_passive);
+            fprintf('  被动段弹道解算的时间是 %.2f 秒\n', tEnd_passive);
             obj.trajectory = obj.trajectory.merge_data();
+            tEnd_solve = toc(tStart_solve);
+            fprintf('  弹道解算的时间是 %.2f 秒\n\n', tEnd_solve);
+            
+            t_end = obj.trajectory.t_whole(end);
+            obj = obj.choose_method("launch");
+            obj = obj.update(t_end, obj.trajectory.X_whole(end, :)');
+            fprintf('  导弹打击时间为：%.2fs （相对误差 < %.2fs)\n',t_end, obj.trajectory.step);
+            fprintf('  导弹打击点经度：%.4f°, 纬度：%.4f°\n\n', rad2deg(obj.theta_L), rad2deg(obj.Phi_L));
         end
         
         function obj = plot(obj)
+            fprintf('* 正在可视化火箭参数...\n');
+            tStart_visualize = tic;
             obj.plotter = Plotter(obj);
             obj.plotter = obj.plotter.plot_trajectoryCurve();
             obj.plotter = obj.plotter.plot_poweredData();
             obj.plotter = obj.plotter.plot_wholeData();
+            tEnd_visualize = toc(tStart_visualize);
+            fprintf('  数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
         end
         
         %% 更新状态(根据变化后的X更新状态量)

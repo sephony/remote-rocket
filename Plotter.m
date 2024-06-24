@@ -23,8 +23,7 @@ classdef Plotter
         %% 构造函数
         function obj = Plotter(rocket)
             init_para = rocket.get_init_para();
-            rocket_temp = Rocket(init_para.A_L0, init_para.theta_L0, init_para.Phi_L0, init_para.pitch_data_path, 'print_flag', 'no_print');
-            rocket_temp = rocket_temp.set_powered_method("launch");
+            rocket_temp = Rocket(init_para.A_L0, init_para.theta_L0, init_para.Phi_L0, init_para.pitch_data_path, 'print_flag', false);
             obj.trajectory = rocket.trajectory;
             t_powered = obj.trajectory.t_powered;
             X_whole = obj.trajectory.X_whole;
@@ -133,9 +132,9 @@ classdef Plotter
             [max_n, idx_max_n] = max(obj.n(1:idx_stage1));
             
             % 打印到终端
-            fprintf('一级飞行时最大攻角: %.2f° 在时间: %.2fs\n', max_alpha, t_powered(idx_max_alpha));
-            fprintf('一级飞行时最大动压: %.2fkPa 在时间: %.2fs\n', max_q, t_powered(idx_max_q));
-            fprintf('一级飞行时最大法向过载: %.2fg 在时间: %.2fs\n\n', max_n, t_powered(idx_max_n));
+            fprintf('  一级飞行时最大攻角: %.2f° 在时间: %.2fs\n', max_alpha, t_powered(idx_max_alpha));
+            fprintf('  一级飞行时最大动压: %.2fkPa 在时间: %.2fs\n', max_q, t_powered(idx_max_q));
+            fprintf('  一级飞行时最大法向过载: %.2fg 在时间: %.2fs\n', max_n, t_powered(idx_max_n));
             
             figure(4);
             hold on

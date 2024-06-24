@@ -165,8 +165,6 @@ classdef Trajectory
                 index = index + num_rows;
                 rocket = rocket.update(t+1, obj.X_count(index-1, :));
                 if (rocket.h > 0) && ((rocket.h / rocket.v) < (2 * obj.step))
-                    fprintf('导弹打击时间为：%.2fs （相对误差 < %.2fs)\n',t, obj.step);
-                    fprintf('导弹打击点经度：%.2f°, 纬度：%.2f°\n\n', rad2deg(rocket.theta_L), rad2deg(rocket.Phi_L));
                     break;
                 end
             end
