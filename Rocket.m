@@ -44,6 +44,8 @@ classdef Rocket
     properties
         %% 发射点参数
         A_L0;               % 发射点地理方位角
+        theta_L0;           % 发射点地理经度
+        Phi_L0;             % 发射点地理纬度
         theta_T0;           % 发射点天文经度
         Phi_T0;             % 发射点天文纬度
         
@@ -65,14 +67,16 @@ classdef Rocket
         %% 构造函数
         function obj = Rocket(A_L0, theta_L0, Phi_L0, pitch_data_path, varargin)
             % 发射点参数,将发射点的地理经纬度转换为天文经纬度
-            obj.A_L0 = A_L0;
-            obj.theta_T0 = Earth.theta_L2T(theta_L0);
-            obj.Phi_T0 = Earth.Phi_L2T(Phi_L0);
+            obj.A_L0 = deg2rad(A_L0);
+            obj.theta_L0 = deg2rad(theta_L0);
+            obj.Phi_L0 = deg2rad(Phi_L0);
+            obj.theta_T0 = Earth.theta_L2T(obj.theta_L0);
+            obj.Phi_T0 = Earth.Phi_L2T(obj.Phi_L0);
             obj.path = pitch_data_path;
             % 发射点地心距离
-            obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
-            obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
-            obj.R0_L = Rotation.L2E(A_L0, theta_L0, Phi_L0)' * obj.R0_e;
+            obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sind(Phi_L0))^2 + (1-Earth.e_E)^2 * (cosd(Phi_L0))^2);
+            obj.R0_e = obj.r0 * [cosd(Phi_L0) * cosd(theta_L0);cosd(Phi_L0) * sind(theta_L0);sind(Phi_L0)];
+            obj.R0_L = Rotation.L2E(obj.A_L0, obj.theta_L0, obj.Phi_L0)' * obj.R0_e;
             % 计算火箭各级发动机秒耗量
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
             % 火箭姿态初始化
@@ -91,7 +95,9 @@ classdef Rocket
             if print_flag == "print"
                 fprintf('火箭发射点参数：\n');
                 fprintf('---------------------------------------------------------\n');
-                fprintf('发射点地理方位角\t %.2f°\n', rad2deg(obj.A_L0));
+                fprintf('发射点地理方位角\t %.2f°\n', A_L0);
+                fprintf('发射点地理经度\t\t %.2f°\n', theta_L0);
+                fprintf('发射点地理纬度\t\t %.2f°\n', Phi_L0);
                 fprintf('发射点天文经度\t\t %.2f°\n', rad2deg(obj.theta_T0));
                 fprintf('发射点天文纬度\t\t %.2f°\n', rad2deg(obj.Phi_T0));
                 fprintf('发射点地心距离\t\t %.2f km\n', obj.r0 / 1e3);
@@ -373,9 +379,9 @@ classdef Rocket
         
         function init_para = get_init_para(obj)
             % 初始化参数作为结构体返回
-            init_para.A_L0 = obj.A_L0;
-            init_para.theta_L0 = obj.theta_T0;
-            init_para.Phi_L0 = obj.Phi_T0;
+            init_para.A_L0 = rad2deg(obj.A_L0);
+            init_para.theta_L0 = rad2deg(obj.theta_L0);
+            init_para.Phi_L0 = rad2deg(obj.Phi_L0);
             init_para.pitch_data_path = obj.path;
         end
     end

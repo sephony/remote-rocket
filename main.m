@@ -1,9 +1,9 @@
 clc; clear; close all;
 tic;
 %% 火箭发射点参数
-A_L0 = deg2rad(-20);      % 发射点地理方位角
-theta_L0 = deg2rad(60);   %（东经为正，西经为负）
-Phi_L0 = deg2rad(-30);    %（北纬为正，南纬为负）
+A_L0 = -20;      % 发射点地理方位角
+theta_L0 = 60;   %（东经为正，西经为负）
+Phi_L0 = -30;    %（北纬为正，南纬为负）
 
 pitch_data_path = 'data/FiC.txt';
 % 创建火箭对象
