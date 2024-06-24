@@ -1,6 +1,5 @@
 classdef Plotter
     properties
-        rocket;     % 火箭对象
         trajectory; % 弹道对象
         
         vec_idx;    % 各级关机点时间对应的索引
@@ -16,20 +15,24 @@ classdef Plotter
         theta_v;    % 弹道倾角
         pitch;      % 俯仰角
         psi_v;      % 弹道偏角
+        
+        R_E;        % 地心坐标系下火箭地心矢量
     end
     
     methods
         %% 构造函数
         function obj = Plotter(rocket)
-            obj.rocket = rocket;
+            init_para = rocket.get_init_para();
+            rocket_temp = Rocket(init_para.A_L0, init_para.theta_L0, init_para.Phi_L0, init_para.pitch_data_path, 'print_flag', 'no_print');
+            rocket_temp = rocket_temp.set_powered_method("launch");
             obj.trajectory = rocket.trajectory;
             t_powered = obj.trajectory.t_powered;
             X_whole = obj.trajectory.X_whole;
             t_whole = obj.trajectory.t_whole;
             % 获取各级关机点时间对应的索引
-            idx_stage1 = find(t_powered == obj.rocket.t_stage(1), 1);
-            idx_stage2 = find(t_powered == obj.rocket.t_stage(1) + obj.rocket.t_stage(2), 1);
-            idx_stage3 = find(t_powered == obj.rocket.t_stage(1) + obj.rocket.t_stage(2) + obj.rocket.t_stage(3), 1);
+            idx_stage1 = find(t_powered == rocket_temp.t_stage(1), 1);
+            idx_stage2 = find(t_powered == rocket_temp.t_stage(1) + rocket_temp.t_stage(2), 1);
+            idx_stage3 = find(t_powered == rocket_temp.t_stage(1) + rocket_temp.t_stage(2) + rocket_temp.t_stage(3), 1);
             obj.vec_idx = [idx_stage1, idx_stage2, idx_stage3];
             
             % 计算全弹道数据长度
@@ -45,20 +48,25 @@ classdef Plotter
             obj.theta_v = zeros(N_whole, 1);
             obj.pitch = zeros(N_whole, 1);
             obj.psi_v = zeros(N_whole, 1);
+            
+            R = X_whole(:,1:3);
+            % 所有时刻的地心坐标系下火箭地心矢量
+            obj.R_E = 0.001*Rotation.L2E(rocket_temp.A_L0, rocket_temp.theta_T0, rocket_temp.Phi_T0) * R' + 0.001*rocket_temp.R0_e;
+            obj.R_E = obj.R_E';
             % 在发射系下计算火箭全弹道各参数数据
             for i = 1:size(t_whole,1)
-                obj.rocket = obj.rocket.update_L(t_whole(i), X_whole(i,:));
-                obj.pitch(i) = rad2deg(obj.rocket.pitch);
-                obj.theta_v(i) = rad2deg(obj.rocket.theta_v);
-                obj.psi_v(i) = rad2deg(obj.rocket.psi_v);
-                obj.alpha(i) = rad2deg(obj.rocket.alpha);
-                obj.h(i) = obj.rocket.h * 0.001;
-                obj.v(i) = obj.rocket.v;
-                obj.m(i) = obj.rocket.m;
-                obj.q(i) = obj.rocket.q * 0.001;
-                obj.theta_L(i) = rad2deg(obj.rocket.theta_L);
-                obj.Phi_L(i) =  rad2deg(obj.rocket.Phi_L);
-                obj.n(i) = obj.rocket.n;
+                rocket_temp = rocket_temp.update(t_whole(i), X_whole(i,:));
+                obj.pitch(i) = rad2deg(rocket_temp.pitch);
+                obj.theta_v(i) = rad2deg(rocket_temp.theta_v);
+                obj.psi_v(i) = rad2deg(rocket_temp.psi_v);
+                obj.alpha(i) = rad2deg(rocket_temp.alpha);
+                obj.h(i) = rocket_temp.h * 0.001;
+                obj.v(i) = rocket_temp.v;
+                obj.m(i) = rocket_temp.m;
+                obj.q(i) = rocket_temp.q * 0.001;
+                obj.theta_L(i) = rad2deg(rocket_temp.theta_L);
+                obj.Phi_L(i) =  rad2deg(rocket_temp.Phi_L);
+                obj.n(i) = rocket_temp.n;
             end
         end
         
@@ -97,16 +105,11 @@ classdef Plotter
             legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
             
             %% 在地球上可视化弹道曲线（地心坐标系下）
-            R = X_whole(:,1:3);
-            % 所有时刻的地心坐标系下火箭地心矢量
-            R_E = Rotation.L2E(obj.rocket.A_L0, obj.rocket.theta_T0, obj.rocket.Phi_T0) * R' + obj.rocket.R0_e*0.001;
-            R_E = R_E';
-            
             figure(3);
             hold on
-            plot3(R_E(:,1), R_E(:,2), R_E(:,3), 'LineWidth', 3);
+            plot3(obj.R_E(:,1), obj.R_E(:,2), obj.R_E(:,3), 'LineWidth', 3);
             for i = 1:length(obj.vec_idx)
-                plot3(R_E(obj.vec_idx(i),1), R_E(obj.vec_idx(i),2), R_E(obj.vec_idx(i),3), '*');
+                plot3(obj.R_E(obj.vec_idx(i),1), obj.R_E(obj.vec_idx(i),2), obj.R_E(obj.vec_idx(i),3), '*');
             end
             ellipsoid(0, 0, 0, 0.001*Earth.a_e, 0.001*Earth.a_e, 0.001*Earth.b_e);
             hold off
@@ -122,7 +125,7 @@ classdef Plotter
         
         function obj = plot_poweredData(obj)
             t_powered = obj.trajectory.t_powered;
-            idx_stage1 = find(t_powered == obj.rocket.t_stage(1), 1);
+            idx_stage1 = obj.vec_idx(1);
             %% 绘制一级飞行时最大攻角、最大动压和最大法向过载
             % 计算一级飞行最大攻角、最大动压和最大法向过载
             [max_alpha, idx_max_alpha] = min(obj.alpha(1:idx_stage1));
@@ -234,6 +237,7 @@ classdef Plotter
             hold off
             axis off;
         end
+        
         function obj = plot_wholeData(obj)
             t_whole = obj.trajectory.t_whole;
             
@@ -289,24 +293,14 @@ classdef Plotter
             title('弹道倾角随时间变化');
             grid on;
             
-            % subplot(3,3,6);
-            % hold on
-            % plot(t_whole, obj.psi_v);
-            % Plotter.plotShutdownPoint(t_whole, obj.psi_v, obj.vec_idx);
-            % hold off
-            % xlabel('时间/s');
-            % ylabel('弹道偏角/°');
-            % title('弹道倾角随时间变化');
-            % grid on;
-            
             subplot(3,3,7);
             hold on
-            plot(t_whole, obj.m);
-            Plotter.plotShutdownPoint(t_whole, obj.m, obj.vec_idx);
+            plot(t_whole, obj.psi_v);
+            Plotter.plotShutdownPoint(t_whole, obj.psi_v, obj.vec_idx);
             hold off
             xlabel('时间/s');
-            ylabel('质量/kg');
-            title('质量随时间变化');
+            ylabel('弹道偏角/°');
+            title('弹道偏角随时间变化');
             grid on;
             
             subplot(3,3,8);

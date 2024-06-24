@@ -44,13 +44,14 @@ classdef Rocket
     properties
         %% 发射点参数
         A_L0;               % 发射点地理方位角
-        theta_T0;           % 发射点地理经度
-        Phi_T0;             % 发射点地理纬度
+        theta_T0;           % 发射点天文经度
+        Phi_T0;             % 发射点天文纬度
         
         r0;                 % 发射点地心距离
         R0_e;               % 发射点地心矢径(地心坐标系下)
         R0_L;               % 发射点地心矢径（发射坐标系下）
         
+        path;               % 程序俯仰角数据路径
         data;               % 程序俯仰角数据
         
         trajectory;         % 弹道对象
@@ -62,11 +63,12 @@ classdef Rocket
     
     methods
         %% 构造函数
-        function obj = Rocket(A_L0, theta_L0, Phi_L0, pitch_data)
+        function obj = Rocket(A_L0, theta_L0, Phi_L0, pitch_data_path, varargin)
             % 发射点参数,将发射点的地理经纬度转换为天文经纬度
             obj.A_L0 = A_L0;
             obj.theta_T0 = Earth.theta_L2T(theta_L0);
             obj.Phi_T0 = Earth.Phi_L2T(Phi_L0);
+            obj.path = pitch_data_path;
             % 发射点地心距离
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
@@ -79,10 +81,28 @@ classdef Rocket
             obj.sigma = 0;
             obj.beta = 0;
             % 读取俯仰角飞行程序数据
-            obj.data = pitch_data;
+            obj.data = load(obj.path);
+            absolutePath = fullfile(pwd, obj.path);
             
-            disp('发射点参数:')
-            fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
+            p = inputParser;                        % 创建一个输入解析器
+            addOptional(p, 'print_flag', 'print');  % 定义期望的参数
+            parse(p, varargin{:});                  % 解析输入参数
+            print_flag = p.Results.print_flag;      % 提取参数值
+            if print_flag == "print"
+                fprintf('火箭发射点参数：\n');
+                fprintf('---------------------------------------------------------\n');
+                fprintf('发射点地理方位角\t %.2f°\n', rad2deg(obj.A_L0));
+                fprintf('发射点天文经度\t\t %.2f°\n', rad2deg(obj.theta_T0));
+                fprintf('发射点天文纬度\t\t %.2f°\n', rad2deg(obj.Phi_T0));
+                fprintf('发射点地心距离\t\t %.2f km\n', obj.r0 / 1e3);
+                fprintf('发射点地心矢径\t\t [%.2f, %.2f, %.2f] km\n', obj.R0_e / 1e3);
+                fprintf('各级发动机秒耗量\t [%.2f, %.2f, %.2f] kg/s\n', obj.dm);
+                fprintf('俯仰角数据路径\t\t %s\n', absolutePath);
+                fprintf('---------------------------------------------------------\n');
+            elseif print_flag == "no_print"
+            else
+                error('print_flag 参数错误, 请选择正确的参数！(print or no_print)');
+            end
         end
         
         % 设置火箭主动段的动力学模型并更新状态
@@ -350,7 +370,16 @@ classdef Rocket
         function Fe_B = Fe_B(obj)
             Fe_B = Rotation.L2B(obj.pitch, obj.yaw, obj.roll) * obj.Fe_L();
         end
+        
+        function init_para = get_init_para(obj)
+            % 初始化参数作为结构体返回
+            init_para.A_L0 = obj.A_L0;
+            init_para.theta_L0 = obj.theta_T0;
+            init_para.Phi_L0 = obj.Phi_T0;
+            init_para.pitch_data_path = obj.path;
+        end
     end
+    
     
     methods(Access = private)
         % 火箭地心矢径（地心坐标系下）
