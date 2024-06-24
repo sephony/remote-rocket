@@ -51,17 +51,19 @@ classdef Rocket
         R0_e;               % 发射点地心矢径(地心坐标系下)
         R0_L;               % 发射点地心矢径（发射坐标系下）
         
+        path;               % 程序俯仰角数据路径
         data;               % 程序俯仰角数据
     end
     
     
     methods
         %% 构造函数
-        function obj = Rocket(A_L0, theta_L0, Phi_L0, pitch_data)
+        function obj = Rocket(A_L0, theta_L0, Phi_L0, pitch_data_path, varargin)
             % 发射点参数,将发射点的地理经纬度转换为天文经纬度
             obj.A_L0 = A_L0;
             obj.theta_T0 = Earth.theta_L2T(theta_L0);
             obj.Phi_T0 = Earth.Phi_L2T(Phi_L0);
+            obj.path = pitch_data_path;
             % 发射点地心距离
             obj.r0 = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(Phi_L0))^2 + (1-Earth.e_E)^2 * (cos(Phi_L0))^2);
             obj.R0_e = obj.r0 * [cos(Phi_L0) * cos(theta_L0);cos(Phi_L0) * sin(theta_L0);sin(Phi_L0)];
@@ -69,7 +71,8 @@ classdef Rocket
             
             % 火箭状态量初始化
             obj.X = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
-            obj.data = pitch_data;
+            obj.data = load(obj.path);
+            absolutePath = fullfile(pwd, obj.path);
             obj.dm = [Rocket.P_stage(1) / (Earth.g_0 * Rocket.Isp_stage(1)), Rocket.P_stage(2) / (Earth.g_0 * Rocket.Isp_stage(2)), Rocket.P_stage(3) / (Earth.g_0 * Rocket.Isp_stage(3))];
             % 火箭姿态初始化
             obj.yaw = 0;
@@ -78,6 +81,23 @@ classdef Rocket
             obj.beta = 0;
             % 更新状态
             obj = obj.update(0, obj.X);
+            
+            p = inputParser;                        % 创建一个输入解析器
+            addParameter(p, 'print_flag', true);    % 定义期望的参数
+            parse(p, varargin{:});                  % 解析输入参数
+            print_flag = p.Results.print_flag;      % 提取参数值
+            if print_flag == true
+                fprintf('火箭发射点参数：\n');
+                fprintf('---------------------------------------------------------\n');
+                fprintf('发射点地理方位角\t %.2f°\n', rad2deg(obj.A_L0));
+                fprintf('发射点地理经度\t\t %.2f°\n', rad2deg(obj.theta_T0));
+                fprintf('发射点地理纬度\t\t %.2f°\n', rad2deg(obj.Phi_T0));
+                fprintf('发射点地心距离\t\t %.2f km\n', obj.r0 / 1e3);
+                fprintf('发射点地心矢径\t\t [%.2f, %.2f, %.2f] km\n', obj.R0_e / 1e3);
+                fprintf('各级发动机秒耗量\t [%.2f, %.2f, %.2f] kg/s\n', obj.dm);
+                fprintf('俯仰角数据路径\t\t %s\n', absolutePath);
+                fprintf('---------------------------------------------------------\n');
+            end
         end
         
         %% 更新状态(根据变化后的X更新状态量)

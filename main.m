@@ -5,12 +5,10 @@ A_L0 = deg2rad(-20);      % 发射点地理方位角
 theta_L0 = deg2rad(60);   %（东经为正，西经为负）
 Phi_L0 = deg2rad(-30);    %（北纬为正，南纬为负）
 
-pitch_data = load('data/FiC.txt');   % 读取俯仰角飞行程序数据
-rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);    % 创建火箭对象
+pitch_data_path = 'data/FiC.txt';   % 读取俯仰角飞行程序数据
+rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data_path);    % 创建火箭对象
 powered_method = "速度系";  %主动段解算方法，"速度系" 或 "发射系"
 % powered_method = "发射系";
-disp('发射点参数:')
-fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
 
 %% 微分方程参数设置
 step = 1;                       % 定义外部循环步长,默认是 1 秒
@@ -22,6 +20,7 @@ index = 1;                      % 索引变量
 %% 主动段弹道计算
 tStart_powerd = tic;
 if powered_method == "发射系"
+    disp('主动段解算方法：发射系')
     for t = 0: step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
         [t_t, X_t] = ode45(@dynamic, [t; t+step], rocket.X, [], rocket);
         
@@ -33,6 +32,7 @@ if powered_method == "发射系"
         rocket = rocket.update(t+1, X_count(index-1, :));
     end
 else
+    disp('主动段解算方法：速度系')
     rocket.X = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
     for t = 0: step: (rocket.t_stage(2)+rocket.t_stage(1)+rocket.t_stage(3) - step)
         [t_t, X_t] = ode45(@dynamic_v, [t; t+step], rocket.X, [], rocket);
@@ -91,7 +91,7 @@ clear X_count t_count;
 
 %% 数据可视化
 tStart_visualize = tic;
-display = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);
+display = Rocket(A_L0, theta_L0, Phi_L0, pitch_data_path, 'print_flag', false);
 visualizeRocketData(display, X_powered, t_powered, X_whole, t_whole);
 tEnd_visualize = toc(tStart_visualize);
 fprintf('数据可视化用的时间是 %.2f 秒\n\n', tEnd_visualize);
