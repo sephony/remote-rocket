@@ -121,6 +121,7 @@ classdef Rocket
             end
             obj.pitch = Rocket.interpolation(t, obj.data);
             obj.alpha = obj.pitch - obj.theta_v;
+            obj.beta = obj.yaw - obj.psi_v;
             
             obj.theta_L = atan2(obj.Rc_e(2), obj.Rc_e(1));
             obj.Phi_L = asin(obj.Rc_e(3) / obj.r);
