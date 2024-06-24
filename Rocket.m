@@ -24,9 +24,10 @@ classdef Rocket
         psi_v;              % 火箭弹道偏角
         sigma;              % 火箭倾侧角
         alpha;              % 火箭攻角
+        beta;               % 火箭侧滑角
         
         Rc_e;               % 火箭地心矢径(地心坐标系下)
-        Rc_L;               % 火箭地心矢径（发射坐标系下）
+        Rc_L;               % 火箭地心矢径(发射坐标系下)
         r;                  % 火箭地心距离
         r_Ue;               % 火箭星下点地心距
         h;                  % 火箭海拔高度
@@ -74,6 +75,7 @@ classdef Rocket
             obj.yaw = 0;
             obj.roll = 0;
             obj.sigma = 0;
+            obj.beta = 0;
             % 更新状态
             obj = obj.update(0, obj.X);
         end
@@ -98,15 +100,15 @@ classdef Rocket
             obj.v = norm(obj.V_launch);
             % 计算弹道倾角和弹道偏角
             if obj.V_launch(2) >= 0             %上升段
-                if  obj.V_launch(1) < 0.0001    %火箭起飞判定
+                if  obj.V_launch(1) < 1e-4    %火箭起飞判定
                     obj.theta_v = pi/2;
                     obj.psi_v = 0;
                 else
                     obj.theta_v = atan(obj.V_launch(2) / obj.V_launch(1));
-                    obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
+                    obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 1e-8)));
                 end
             else
-                if abs(obj.V_launch(1)) < 0.0001%防止除0，平滑过渡-90°
+                if abs(obj.V_launch(1)) < 1e-4%防止除0，平滑过渡-90°
                     obj.theta_v = -pi/2;
                     obj.psi_v = 0;
                 else
@@ -114,7 +116,7 @@ classdef Rocket
                     if obj.V_launch(1) < 0      %实际弹道倾角在-90°到-180°之间
                         obj.theta_v = obj.theta_v - pi;
                     end
-                    obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 0.00000001)));
+                    obj.psi_v = atan(-obj.V_launch(3) / (cos(obj.theta_v) * obj.V_launch(1) + sin(obj.theta_v) * (obj.V_launch(2) + 1e-8)));
                 end
             end
             obj.pitch = Rocket.interpolation(t, obj.data);
@@ -128,9 +130,8 @@ classdef Rocket
             obj.r_Ue = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(obj.Phi_T))^2 + (1-Earth.e_E)^2 * (cos(obj.Phi_T))^2);
             obj.h = obj.r - obj.r_Ue;
             
-            obj.q = Rocket.get_q(obj.h, obj.v);
-            R = obj.R_v();
-            obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
+            obj.q = obj.get_q();
+            obj.n = obj.get_n();
         end
         function obj = update_v(obj, t, X)
             obj.t = t;
@@ -154,6 +155,7 @@ classdef Rocket
             
             obj.pitch = Rocket.interpolation(t, obj.data);
             obj.alpha = obj.pitch - obj.theta_v;
+            obj.beta = obj.yaw - obj.psi_v;
             
             obj.theta_L = atan2(obj.Rc_e(2), obj.Rc_e(1));
             obj.Phi_L = asin(obj.Rc_e(3) / obj.r);
@@ -163,9 +165,8 @@ classdef Rocket
             obj.r_Ue = Earth.a_e * (1 - Earth.e_E)/sqrt((sin(obj.Phi_T))^2 + (1-Earth.e_E)^2 * (cos(obj.Phi_T))^2);
             obj.h = obj.r - obj.r_Ue;
             
-            obj.q = Rocket.get_q(obj.h, obj.v);
-            R = obj.R_v();
-            obj.n = (R(1)*sin(obj.alpha)+R(2)*cos(obj.alpha))/(obj.m*Earth.g_0);
+            obj.q = obj.get_q();
+            obj.n = obj.get_n();
         end
         
         function X = data_v2L(obj, X_powered, t_powered)
@@ -189,6 +190,11 @@ classdef Rocket
         function g_L = g_L(obj)
             g_N = obj.g_N();
             g_L = g_N(1) / obj.r * obj.Rc_L + g_N(2) * Rotation.L2E(obj.A_L0, obj.theta_T0, obj.Phi_T0)' * [0; 0; 1];
+        end
+        
+        % 火箭受到的引力加速度（速度坐标系下）
+        function g_v = g_v(obj)
+            g_v = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v) * obj.g_L();
         end
         
         % 火箭受到的气动力（速度坐标系下）
@@ -231,17 +237,33 @@ classdef Rocket
             R_L = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v)' * R;
         end
         
+        % 火箭受到的气动力（体坐标系下）
+        function R_B = R_B(obj)
+            R_B = Rotation.L2B(obj.pitch, obj.yaw, obj.roll) * obj.R_L();
+        end
+        
+        % 火箭受到的推力（体坐标系下）
+        function P_B = P_B(obj)
+            if 0 <= obj.t && obj.t < Rocket.t_stage(1)
+                P_B = [Rocket.P_stage(1); 0; 0];
+            elseif obj.t < Rocket.t_stage(1) + Rocket.t_stage(2)
+                P_B = [Rocket.P_stage(2); 0; 0];
+            elseif obj.t < Rocket.t_stage(1) + Rocket.t_stage(2) + Rocket.t_stage(3)
+                P_B = [Rocket.P_stage(3); 0; 0];
+            else
+                P_B = [0; 0; 0];    %被动段无推力
+            end
+        end
+        
         % 火箭受到的推力（发射坐标系下）
         function P_L = P_L(obj)
-            if 0 <= obj.t && obj.t < Rocket.t_stage(1)
-                P_L = Rotation.L2B(obj.pitch, obj.yaw, obj.roll)' * [Rocket.P_stage(1); 0; 0];
-            elseif obj.t < Rocket.t_stage(1) + Rocket.t_stage(2)
-                P_L = Rotation.L2B(obj.pitch, obj.yaw, obj.roll)' * [Rocket.P_stage(2); 0; 0];
-            elseif obj.t < Rocket.t_stage(1) + Rocket.t_stage(2) + Rocket.t_stage(3)
-                P_L = Rotation.L2B(obj.pitch, obj.yaw, obj.roll)' * [Rocket.P_stage(3); 0; 0];
-            else
-                P_L = [0; 0; 0];    %被动段无推力
-            end
+            P_L = Rotation.L2B(obj.pitch, obj.yaw, obj.roll)' * obj.P_B();
+        end
+        
+        % 火箭受到的推力（速度坐标系下）
+        function P_v = P_v(obj)
+            P_v = Rotation.V2B(obj.alpha, obj.beta)' * obj.P_B();
+            % P_v = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v) * obj.P_L();
         end
         
         % 火箭受到的科氏惯性力（发射坐标系下）
@@ -251,11 +273,31 @@ classdef Rocket
             Fa_L = -2 * obj.X(7) * cross(omega_L, obj.V_launch);
         end
         
+        % 火箭受到的科氏惯性力（速度坐标系下）
+        function Fa_v = Fa_v(obj)
+            Fa_v = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v) * obj.Fa_L();
+        end
+        
+        % 火箭受到的科氏惯性力（体坐标系下）
+        function Fa_B = Fa_B(obj)
+            Fa_B = Rotation.L2B(obj.pitch, obj.yaw, obj.roll) * obj.Fa_L();
+        end
+        
         % 火箭受到的牵连惯性力（发射坐标系下）
         function Fe_L = Fe_L(obj)
             % 地球自转角速度矢量（发射坐标系下）
             omega_L = Rotation.L2E(obj.A_L0, obj.theta_T0, obj.Phi_T0)' * [0; 0; Earth.omega];
             Fe_L = -obj.X(7) * cross(omega_L, cross(omega_L, obj.V_launch));
+        end
+        
+        % 火箭受到的牵连惯性力（速度坐标系下）
+        function Fe_v = Fe_v(obj)
+            Fe_v = Rotation.L2V(obj.sigma, obj.psi_v, obj.theta_v) * obj.Fe_L();
+        end
+        
+        % 火箭受到的牵连惯性力（体坐标系下）
+        function Fe_B = Fe_B(obj)
+            Fe_B = Rotation.L2B(obj.pitch, obj.yaw, obj.roll) * obj.Fe_L();
         end
     end
     
@@ -269,14 +311,24 @@ classdef Rocket
         function Rc_L = get_Rc_L(obj)
             Rc_L = obj.R_launch + obj.R0_L;
         end
+        
+        % 计算动压
+        function q = get_q(obj)
+            rho = 1.225 * exp(-1.406e-4 * obj.h);   % 大气密度
+            q = 0.5 * rho * obj.v^2;                % 动压
+        end
+        
+        % 计算过载
+        function n = get_n(obj)
+            R_B = obj.R_B();
+            P_B = obj.P_B();
+            Fa_B = obj.Fa_B();
+            Fe_B = obj.Fe_B();
+            n = (R_B(2)+P_B(2)+Fa_B(2)+Fe_B(2))/(obj.m*Earth.g_0);
+        end
     end
     
     methods(Static)
-        % 计算动压
-        function q = get_q(h, v)
-            rho = 1.225 * exp(-1.406e-4 * h);   % 大气密度
-            q = 0.5 * rho * v^2;                % 动压
-        end
         % 插值函数，平滑程序俯仰角
         function pitch_angle = interpolation(t, data)
             d2r = pi / 180;

@@ -7,8 +7,8 @@ Phi_L0 = deg2rad(-30);    %（北纬为正，南纬为负）
 
 pitch_data = load('data/FiC.txt');   % 读取俯仰角飞行程序数据
 rocket = Rocket(A_L0, theta_L0, Phi_L0, pitch_data);    % 创建火箭对象
-% powered_method = "速度系";  %主动段解算方法，"速度系" 或 "发射系"
-powered_method = "发射系";
+powered_method = "速度系";  %主动段解算方法，"速度系" 或 "发射系"
+% powered_method = "发射系";
 disp('发射点参数:')
 fprintf('发射方位角: %.2f°  地理经度: %.2f°  地理纬度: %.2f°\n\n', rad2deg(A_L0), rad2deg(theta_L0), rad2deg(Phi_L0));
 

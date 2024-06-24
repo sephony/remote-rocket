@@ -27,9 +27,14 @@ classdef Rotation
             C = Rotation.x(roll) * Rotation.y(yaw) * Rotation.z(pitch);
         end
         
-        %path:弹道倾角; slant:倾侧角; defl:弹道偏角
+        % path:弹道倾角; slant:倾侧角; defl:弹道偏角
         function C = L2V(slant, defl, path)
             C = Rotation.x(slant) * Rotation.y(defl) * Rotation.z(path);
+        end
+        
+        % alpha:俯仰角; beta:偏航角
+        function C = V2B(alpha, beta)
+            C = Rotation.z(alpha) * Rotation.y(beta);
         end
     end
 end
