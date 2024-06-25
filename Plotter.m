@@ -70,7 +70,8 @@ classdef Plotter
         end
         
         function obj = plot_trajectoryCurve(obj)
-            X_powered = obj.trajectory.X_powered * 0.001;
+            n_powered = size(obj.trajectory.t_powered, 1);
+            X_powered = obj.trajectory.X_whole(1: n_powered, :) * 0.001;
             X_whole = obj.trajectory.X_whole * 0.001;
             
             %% 绘制主动段弹道曲线（发射坐标系下）
@@ -124,7 +125,8 @@ classdef Plotter
         
         function obj = plot_poweredData(obj)
             t_powered = obj.trajectory.t_powered;
-            X_powered = obj.trajectory.X_powered;
+            n_powered = size(obj.trajectory.t_powered, 1);
+            X_powered = obj.trajectory.X_whole(1: n_powered, :);
             idx_stage1 = obj.vec_idx(1);
             %% 绘制一级飞行时最大攻角、最大动压和最大法向过载
             % 计算一级飞行最大攻角、最大动压和最大法向过载
