@@ -55,17 +55,17 @@ classdef Plotter
             % 在发射系下计算火箭全弹道各参数数据
             for i = 1:size(t_whole,1)
                 rocket_temp = rocket_temp.update(t_whole(i), X_whole(i,:));
-                obj.pitch(i) = rad2deg(rocket_temp.pitch);
-                obj.theta_v(i) = rad2deg(rocket_temp.theta_v);
-                obj.psi_v(i) = rad2deg(rocket_temp.psi_v);
-                obj.alpha(i) = rad2deg(rocket_temp.alpha);
                 obj.h(i) = rocket_temp.h * 0.001;
                 obj.v(i) = rocket_temp.v;
-                obj.m(i) = rocket_temp.m;
-                obj.q(i) = rocket_temp.q * 0.001;
                 obj.theta_L(i) = rad2deg(rocket_temp.theta_L);
                 obj.Phi_L(i) =  rad2deg(rocket_temp.Phi_L);
+                obj.m(i) = rocket_temp.m;
+                obj.q(i) = rocket_temp.q * 0.001;
                 obj.n(i) = rocket_temp.n;
+                obj.alpha(i) = rad2deg(rocket_temp.alpha);
+                obj.theta_v(i) = rad2deg(rocket_temp.theta_v);
+                obj.pitch(i) = rad2deg(rocket_temp.pitch);
+                obj.psi_v(i) = rad2deg(rocket_temp.psi_v);
             end
         end
         
@@ -74,7 +74,7 @@ classdef Plotter
             X_whole = obj.trajectory.X_whole * 0.001;
             
             %% 绘制主动段弹道曲线（发射坐标系下）
-            figure (1);
+            figure ('Name', '主动段弹道曲线');
             hold on
             plot3(X_powered(:,3),X_powered(:,1),X_powered(:,2));
             Plotter.plotShutdownPoint3(X_powered, obj.vec_idx);
@@ -89,7 +89,7 @@ classdef Plotter
             legend('主动段弹道曲线', '一级关机点', '二级关机点', '三级关机点');
             
             %% 绘制全弹道曲线（发射坐标系下）
-            figure (2);
+            figure ('Name', '全弹道曲线');
             hold on
             plot3(X_whole(:,3),X_whole(:,1),X_whole(:,2));
             Plotter.plotShutdownPoint3(X_whole, obj.vec_idx);
@@ -104,7 +104,7 @@ classdef Plotter
             legend('全弹道曲线', '一级关机点', '二级关机点', '三级关机点');
             
             %% 在地球上可视化弹道曲线（地心坐标系下）
-            figure(3);
+            figure('Name', '地心坐标系下弹道曲线');
             hold on
             plot3(obj.R_E(:,1), obj.R_E(:,2), obj.R_E(:,3), 'LineWidth', 3);
             for i = 1:length(obj.vec_idx)
@@ -124,6 +124,7 @@ classdef Plotter
         
         function obj = plot_poweredData(obj)
             t_powered = obj.trajectory.t_powered;
+            X_powered = obj.trajectory.X_powered;
             idx_stage1 = obj.vec_idx(1);
             %% 绘制一级飞行时最大攻角、最大动压和最大法向过载
             % 计算一级飞行最大攻角、最大动压和最大法向过载
@@ -136,7 +137,7 @@ classdef Plotter
             fprintf('  一级飞行时最大动压: %.2fkPa 在时间: %.2fs\n', max_q, t_powered(idx_max_q));
             fprintf('  一级飞行时最大法向过载: %.2fg 在时间: %.2fs\n', max_n, t_powered(idx_max_n));
             
-            figure(4);
+            figure('Name', '主动段攻角、俯仰角和弹道倾角');
             hold on
             plot(t_powered, obj.alpha(1: size(t_powered, 1)), 'r');    % 绘制攻角
             plot(t_powered, obj.pitch(1: size(t_powered, 1)), 'g');    % 绘制俯仰角
@@ -152,7 +153,7 @@ classdef Plotter
             grid on;
             
             %% 绘制主动段数据
-            figure(5);
+            figure('Name', '主动段数据');
             subplot(3,3,1);
             hold on
             plot(t_powered, obj.h(1: size(t_powered, 1)));
@@ -235,13 +236,41 @@ classdef Plotter
             legend('一级关机点', '二级关机点', '三级关机点');
             hold off
             axis off;
+            
+            figure('Name', '主动段数据');
+            subplot(2,1,1);
+            hold on
+            plot(t_powered, 0.001*X_powered(:,1));
+            plot(t_powered, 0.001*X_powered(:,2));
+            Plotter.plotShutdownPoint(t_powered, 0.001*X_powered(:,1), obj.vec_idx);
+            Plotter.plotShutdownPoint(t_powered, 0.001*X_powered(:,2), obj.vec_idx);
+            hold off
+            xlabel('时间/s');
+            ylabel('距离/km');
+            title('位移坐标随时间变化');
+            legend('x', 'y', '一级关机点', '二级关机点', '三级关机点');
+            grid on;
+            
+            
+            subplot(2,1,2);
+            hold on
+            plot(t_powered, X_powered(:,4));
+            plot(t_powered, X_powered(:,5));
+            Plotter.plotShutdownPoint(t_powered, X_powered(:,4), obj.vec_idx);
+            Plotter.plotShutdownPoint(t_powered, X_powered(:,5), obj.vec_idx);
+            hold off
+            xlabel('时间/s');
+            ylabel('速度(m/s)');
+            title('速度坐标随时间变化');
+            legend('v_x', 'v_y', '一级关机点', '二级关机点', '三级关机点');
+            grid on;
         end
         
         function obj = plot_wholeData(obj)
             t_whole = obj.trajectory.t_whole;
             
             %% 绘制全弹道数据
-            figure(6);
+            figure('Name', '全弹道数据');
             subplot(3,3,1);
             hold on
             plot(t_whole, obj.h);
