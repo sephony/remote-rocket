@@ -177,9 +177,11 @@ classdef Trajectory
         function obj = merge_data(obj)
             % 转换主动段数据
             if(obj.rocket_temp.powered_method == "velocity")
-                obj.X_powered = obj.data_v2L(obj.X_powered, obj.t_powered);
+                X_powered_temp = obj.data_v2L(obj.X_powered, obj.t_powered);
+                obj.X_whole = [X_powered_temp; obj.X_passive];
+            else
+                obj.X_whole = [obj.X_powered; obj.X_passive];
             end
-            obj.X_whole = [obj.X_powered; obj.X_passive];
             obj.t_whole = [obj.t_powered; obj.t_passive];
         end
         
