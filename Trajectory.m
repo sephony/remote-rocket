@@ -18,10 +18,23 @@ classdef Trajectory
     end
     methods
         %% 构造函数
-        function obj = Trajectory(rocket)
+        function obj = Trajectory(rocket, varargin)
             obj.rocket_temp = rocket;
-            obj.step = 1;
-            obj.N = floor(500000 / obj.step);
+            obj = obj.set_config(varargin{:});
+        end
+        
+        %% 设置微分方程参数
+        function obj = set_config(obj, varargin)
+            % 创建一个输入解析器
+            p = inputParser;
+            % 添加参数
+            addParameter(p, 'step', 1);
+            addParameter(p, 'N', 500000);
+            % 解析输入参数
+            parse(p, varargin{:});
+            % 获取参数值
+            obj.step = p.Results.step;
+            obj.N = p.Results.N;
             obj.X_count = zeros(obj.N, 7);
             obj.t_count = zeros(obj.N, 1);
         end

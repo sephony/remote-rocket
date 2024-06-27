@@ -158,7 +158,7 @@ classdef Rocket
         function obj = solve(obj)
             fprintf('* 正在解算弹道...\n');
             tStart_solve = tic;
-            obj.trajectory = Trajectory(obj);   % 创建弹道对象
+            obj.trajectory = Trajectory(obj,'step',1,'N',500000);   % 创建弹道对象
             tStart_powered = tic;
             obj.trajectory = obj.trajectory.calc_powered(obj.powered_method);
             tEnd_powered = toc(tStart_powered);
