@@ -1,20 +1,26 @@
 classdef Rotation
     methods(Access = public, Static)
         function C = x(angle)
+            c = cos(angle);
+            s = sin(angle);
             C = [1, 0, 0;
-                0, cos(angle), sin(angle);
-                0, -sin(angle), cos(angle)];
+                0, c, s;
+                0, -s, c];
         end
         
         function C = y(angle)
-            C = [cos(angle), 0, -sin(angle);
+            c = cos(angle);
+            s = sin(angle);
+            C = [c, 0, -s;
                 0, 1, 0;
-                sin(angle), 0, cos(angle)];
+                s, 0, c];
         end
         
         function C = z(angle)
-            C = [cos(angle), sin(angle), 0;
-                -sin(angle), cos(angle), 0;
+            c = cos(angle);
+            s = sin(angle);
+            C = [c, s, 0;
+                -s, c, 0;
                 0, 0, 1];
         end
         % A_L:发射点方位角; theta_T:天文经度; Phi_T:天文纬度
