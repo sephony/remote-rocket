@@ -59,6 +59,7 @@ classdef Rocket
         trajectory;         % 弹道对象
         plotter;            % 可视化对象
         powered_method;     % 主动段动力学微分方程方法
+        passive_method;     % 被动段动力学微分方程方法
         update;             % 更新状态函数
     end
     
@@ -89,14 +90,14 @@ classdef Rocket
             absolutePath = fullfile(pwd, obj.path);
             % 创建一个输入解析器
             p = inputParser;
+            % 验证输入参数
+            validPrintFlag = @(x) islogical(x) && isscalar(x);
             % 定义期望的参数
-            addOptional(p, 'print_flag', true);
-            addOptional(p, 'powered_method', 'launch');
+            addOptional(p, 'print_flag', true, validPrintFlag);
             % 解析输入参数
             parse(p, varargin{:});
             % 提取参数值
             print_flag = p.Results.print_flag;
-            obj.powered_method = p.Results.powered_method;
             if print_flag == true
                 fprintf('-------------------------------------------------------------\n');
                 fprintf('                 ** 火箭发射点及其他参数 **\n');
@@ -112,35 +113,41 @@ classdef Rocket
                 fprintf('\t各级发动机秒耗量\t\t\t [%.2f, %.2f, %.2f] kg/s\n', obj.dm);
                 fprintf('\t俯仰角数据路径\t\t\t\t %s\n', absolutePath);
             end
-            obj = obj.set_powered_method(obj.powered_method, 'print_flag', false);
+            obj = obj.set_method('print_flag', false);
         end
         
         % 设置火箭主动段的动力学模型并更新状态
-        function obj = set_powered_method(obj, powered_method, varargin)
-            obj.powered_method = powered_method;
-            X0_L = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
-            X0_v = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
-            if powered_method == "launch"
-                obj.X = X0_L;
-                obj.update = @(t, X) obj.update_L(t, X);
-            elseif powered_method == "velocity"
-                obj.X = X0_v;
-                obj.update = @(t, X) obj.update_v(t, X);
-            else
-                obj.powered_method = "error";
-                error('火箭动力学微分方程方法错误, 请选择正确的动力学微分方程方法！(launch or velocity)');
-            end
-            obj = obj.update(0, obj.X);% 更新状态
+        function obj = set_method(obj, varargin)
             % 创建一个输入解析器
             p = inputParser;
+            % 验证输入参数
+            validMethod = @(x) ismember(x, ["launch", "velocity"]);
+            validPrintFlag = @(x) islogical(x) && isscalar(x);
             % 定义期望的参数
-            addOptional(p, 'print_flag', true);
+            addParameter(p, 'powered_method', "launch", validMethod);
+            addParameter(p, 'passive_method', "launch", validMethod);
+            addParameter(p, 'print_flag', true, validPrintFlag);
             % 解析输入参数
             parse(p, varargin{:});
             % 提取参数值
             print_flag = p.Results.print_flag;
+            obj.powered_method = p.Results.powered_method;
+            obj.passive_method = p.Results.passive_method;
+            % 初始化状态量
+            X0_L = [0; 0; 0; 0; 0; 0; Rocket.m_stage(1)];
+            X0_v = [0; pi/2; 0; 0; 0; 0; Rocket.m_stage(1)];
+            if obj.powered_method == "launch"
+                obj.X = X0_L;
+                obj.update = @(t, X) obj.update_L(t, X);
+            elseif obj.powered_method == "velocity"
+                obj.X = X0_v;
+                obj.update = @(t, X) obj.update_v(t, X);
+            end
+            obj = obj.update(0, obj.X);% 更新状态
+            
             if print_flag == true
                 fprintf('\t主动段动力学微分方程方法\t\t %s\n', obj.powered_method);
+                fprintf('\t被动段动力学微分方程方法\t\t %s\n', obj.passive_method);
                 fprintf('-------------------------------------------------------------\n');
             end
         end
@@ -164,7 +171,7 @@ classdef Rocket
             tEnd_powered = toc(tStart_powered);
             fprintf('  主动段弹道解算的时间是 %.2f 秒\n', tEnd_powered);
             tStart_passive = tic;
-            obj.trajectory = obj.trajectory.calc_passive("launch");
+            obj.trajectory = obj.trajectory.calc_passive(obj.passive_method);
             tEnd_passive = toc(tStart_passive);
             fprintf('  被动段弹道解算的时间是 %.2f 秒\n', tEnd_passive);
             obj.trajectory = obj.trajectory.merge_data();

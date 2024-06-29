@@ -165,9 +165,14 @@ classdef Trajectory
             obj = obj.choose_method(dynamic_type);
             rocket = obj.rocket_temp;
             index = 1;
-            % 如果主动段采用速度系，则将主动段的数据转换为发射系下的数据
-            if rocket.powered_method == "velocity"
-                rocket.X = [rocket.R_launch; rocket.V_launch; rocket.m];
+            if rocket.powered_method ~= rocket.passive_method
+                if rocket.powered_method == "velocity"
+                    % 如果主动段采用速度系，则将主动段的数据转换为发射系下的数据
+                    rocket.X = [rocket.R_launch; rocket.V_launch; rocket.m];
+                else
+                    % 如果主动段采用发射系，则将主动段的数据转换为速度系下的数据
+                    rocket.X = [rocket.v; rocket.theta_v; rocket.psi_v; rocket.R_launch; rocket.m];
+                end
             end
             % 被动段弹道计算
             for t = (rocket.t_stage(1) + rocket.t_stage(2) + rocket.t_stage(3)): obj.step: 100000
@@ -188,12 +193,23 @@ classdef Trajectory
         end
         %% 全弹道数据合并
         function obj = merge_data(obj)
-            % 转换主动段数据
-            if(obj.rocket_temp.powered_method == "velocity")
-                X_powered_temp = obj.data_v2L(obj.X_powered, obj.t_powered);
-                obj.X_whole = [X_powered_temp; obj.X_passive];
+            rocket = obj.rocket_temp;
+            if rocket.powered_method == rocket.passive_method
+                if rocket.powered_method == "launch"
+                    obj.X_whole = [obj.X_powered; obj.X_passive];
+                else
+                    X_powered_temp = obj.data_v2L(obj.X_powered, obj.t_powered);
+                    X_passive_temp = obj.data_v2L(obj.X_passive, obj.t_passive);
+                    obj.X_whole = [X_powered_temp; X_passive_temp];
+                end
             else
-                obj.X_whole = [obj.X_powered; obj.X_passive];
+                if rocket.powered_method == "launch"
+                    X_passive_temp = obj.data_v2L(obj.X_passive, obj.t_passive);
+                    obj.X_whole = [obj.X_powered; X_passive_temp];
+                else
+                    X_powered_temp = obj.data_v2L(obj.X_powered, obj.t_powered);
+                    obj.X_whole = [X_powered_temp; obj.X_passive];
+                end
             end
             obj.t_whole = [obj.t_powered; obj.t_passive];
         end
@@ -207,6 +223,17 @@ classdef Trajectory
             for i = 1:size(t,1)
                 rocket = rocket.update_v(t(i), X(i,:));
                 X_L(i,:) = [rocket.R_launch', rocket.V_launch', rocket.m];
+            end
+        end
+        
+        function X_v = data_L2v(obj, X, t)
+            % 计算主动段数据长度
+            n = size(t, 1);
+            X_v = zeros(n, 7);
+            rocket = obj.rocket_temp;
+            for i = 1:size(t,1)
+                rocket = rocket.update_L(t(i), X(i,:));
+                X_v(i,:) = [rocket.v, rocket.theta_v, rocket.psi_v, rocket.R_launch', rocket.m];
             end
         end
     end
